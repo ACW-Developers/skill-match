@@ -150,6 +150,44 @@ export type Database = {
           },
         ]
       }
+      job_applications: {
+        Row: {
+          cover_note: string | null
+          created_at: string
+          id: string
+          job_id: string
+          proposed_rate: number | null
+          status: string
+          worker_id: string
+        }
+        Insert: {
+          cover_note?: string | null
+          created_at?: string
+          id?: string
+          job_id: string
+          proposed_rate?: number | null
+          status?: string
+          worker_id: string
+        }
+        Update: {
+          cover_note?: string | null
+          created_at?: string
+          id?: string
+          job_id?: string
+          proposed_rate?: number | null
+          status?: string
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           address: string | null

@@ -12,7 +12,16 @@ import ActivityLogsPage from "@/pages/ActivityLogsPage";
 import UserManagementPage from "@/pages/UserManagementPage";
 import SettingsPage from "@/pages/SettingsPage";
 import VerificationPage from "@/pages/VerificationPage";
-import PlaceholderPage from "@/pages/PlaceholderPage";
+import WorkerProfilePage from "@/pages/WorkerProfilePage";
+import WorkerMyJobsPage from "@/pages/WorkerMyJobsPage";
+import WorkerEarningsPage from "@/pages/WorkerEarningsPage";
+import WorkerReviewsPage from "@/pages/WorkerReviewsPage";
+import CustomerPostJobPage from "@/pages/CustomerPostJobPage";
+import CustomerBookingsPage from "@/pages/CustomerBookingsPage";
+import FindWorkersPage from "@/pages/FindWorkersPage";
+import PaymentsPage from "@/pages/PaymentsPage";
+import AdminJobsPage from "@/pages/AdminJobsPage";
+import AdminCategoriesPage from "@/pages/AdminCategoriesPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,24 +38,25 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<DashboardLayout />}>
               <Route index element={<Dashboard />} />
-              <Route path="workers" element={<PlaceholderPage title="Workers Management" />} />
-              <Route path="customers" element={<PlaceholderPage title="Customer Management" />} />
+              {/* Admin */}
               <Route path="verification" element={<VerificationPage />} />
-              <Route path="jobs" element={<PlaceholderPage title="Jobs Management" />} />
-              <Route path="categories" element={<PlaceholderPage title="Service Categories" />} />
-              <Route path="payments" element={<PlaceholderPage title="Payments" />} />
+              <Route path="jobs" element={<AdminJobsPage />} />
+              <Route path="categories" element={<AdminCategoriesPage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="activity" element={<ActivityLogsPage />} />
               <Route path="user-management" element={<UserManagementPage />} />
+              {/* Worker */}
+              <Route path="my-jobs" element={<WorkerMyJobsPage />} />
+              <Route path="profile" element={<WorkerProfilePage />} />
+              <Route path="earnings" element={<WorkerEarningsPage />} />
+              <Route path="reviews" element={<WorkerReviewsPage />} />
+              {/* Customer */}
+              <Route path="post-job" element={<CustomerPostJobPage />} />
+              <Route path="find-workers" element={<FindWorkersPage />} />
+              <Route path="bookings" element={<CustomerBookingsPage />} />
+              {/* Shared */}
+              <Route path="payments" element={<PaymentsPage />} />
               <Route path="settings" element={<SettingsPage />} />
-              <Route path="my-jobs" element={<PlaceholderPage title="My Jobs" />} />
-              <Route path="availability" element={<PlaceholderPage title="Availability" />} />
-              <Route path="earnings" element={<PlaceholderPage title="Earnings" />} />
-              <Route path="reviews" element={<PlaceholderPage title="Reviews" />} />
-              <Route path="messages" element={<PlaceholderPage title="Messages" />} />
-              <Route path="profile" element={<PlaceholderPage title="Profile" />} />
-              <Route path="find-workers" element={<PlaceholderPage title="Find Workers" />} />
-              <Route path="bookings" element={<PlaceholderPage title="My Bookings" />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

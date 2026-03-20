@@ -1,0 +1,210 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search, Star, MapPin, DollarSign, CheckCircle } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+
+export default function FindWorkersPage() {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [workers, setWorkers] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
+  const [selectedWorker, setSelectedWorker] = useState<any>(null);
+  const [workerCerts, setWorkerCerts] = useState<any[]>([]);
+  const [workerReviews, setWorkerReviews] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function load() {
+      const { data: wps } = await supabase
+        .from("worker_profiles")
+        .select("*, profiles:user_id(name, email, avatar_url)")
+        .eq("verification_status", "approved")
+        .order("is_online", { ascending: false });
+
+      const workerUserIds = (wps || []).map(w => w.user_id);
+      const { data: reviewsData } = workerUserIds.length > 0
+        ? await supabase.from("reviews").select("reviewee_id, rating").in("reviewee_id", workerUserIds)
+        : { data: [] };
+
+      const ratingMap: Record<string, { sum: number; count: number }> = {};
+      (reviewsData || []).forEach(r => {
+        if (!ratingMap[r.reviewee_id]) ratingMap[r.reviewee_id] = { sum: 0, count: 0 };
+        ratingMap[r.reviewee_id].sum += r.rating;
+        ratingMap[r.reviewee_id].count += 1;
+      });
+
+      const skillIds = [...new Set((wps || []).flatMap(w => w.skills || []))];
+      const { data: cats } = skillIds.length > 0
+        ? await supabase.from("service_categories").select("id, name").in("id", skillIds)
+        : { data: [] };
+      const catMap: Record<string, string> = {};
+      (cats || []).forEach(c => { catMap[c.id] = c.name; });
+
+      setWorkers((wps || []).map(w => ({
+        ...w,
+        name: (w as any).profiles?.name || "Worker",
+        email: (w as any).profiles?.email || "",
+        skillNames: (w.skills || []).map((s: string) => catMap[s] || "").filter(Boolean),
+        rating: ratingMap[w.user_id] ? Math.round(ratingMap[w.user_id].sum / ratingMap[w.user_id].count * 10) / 10 : 0,
+        reviewCount: ratingMap[w.user_id]?.count || 0,
+      })));
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const openWorkerProfile = async (worker: any) => {
+    setSelectedWorker(worker);
+    const [certsRes, reviewsRes] = await Promise.all([
+      supabase.from("certifications").select("*").eq("worker_id", worker.id),
+      supabase.from("reviews").select("*, profiles:reviewer_id(name)").eq("reviewee_id", worker.user_id).order("created_at", { ascending: false }).limit(10),
+    ]);
+    setWorkerCerts(certsRes.data || []);
+    setWorkerReviews(reviewsRes.data || []);
+  };
+
+  const filtered = workers.filter(w =>
+    w.name.toLowerCase().includes(search.toLowerCase()) ||
+    w.skillNames.some((s: string) => s.toLowerCase().includes(search.toLowerCase()))
+  );
+
+  if (loading) {
+    return <div className="space-y-6"><Skeleton className="h-8 w-48" /><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)}</div></div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Find Workers</h1>
+        <p className="text-muted-foreground text-sm">Browse verified skilled professionals</p>
+      </div>
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input placeholder="Search by name or skill..." className="pl-10 bg-card" value={search} onChange={(e) => setSearch(e.target.value)} />
+      </div>
+
+      {filtered.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((w, i) => (
+            <div key={w.id} className="stat-card space-y-3 cursor-pointer hover:border-primary/40 transition-colors animate-fade-in" style={{ animationDelay: `${i * 60}ms` }} onClick={() => openWorkerProfile(w)}>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold">
+                  {w.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-medium text-foreground">{w.name}</p>
+                    <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+                  </div>
+                  <p className="text-xs text-muted-foreground">{w.skillNames.join(", ") || "General"}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="flex items-center gap-1 text-chart-4">
+                  <Star className="w-3 h-3 fill-current" /> {w.rating > 0 ? `${w.rating} (${w.reviewCount})` : "New"}
+                </span>
+                {w.hourly_rate && <span className="flex items-center gap-1 text-foreground"><DollarSign className="w-3 h-3" /> ${w.hourly_rate}/hr</span>}
+                <span className={`px-2 py-0.5 rounded-full ${w.is_online ? "bg-green-500/10 text-green-500" : "bg-muted text-muted-foreground"}`}>
+                  {w.is_online ? "Online" : "Offline"}
+                </span>
+              </div>
+              {w.service_area && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" /> {w.service_area}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="stat-card flex flex-col items-center py-16 text-center">
+          <Search className="w-10 h-10 text-muted-foreground mb-3" />
+          <p className="text-foreground font-medium">No workers found</p>
+          <p className="text-sm text-muted-foreground">Try a different search term</p>
+        </div>
+      )}
+
+      {/* Worker Profile Dialog */}
+      <Dialog open={!!selectedWorker} onOpenChange={(open) => !open && setSelectedWorker(null)}>
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+          {selectedWorker && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold">
+                    {selectedWorker.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="flex items-center gap-1.5">{selectedWorker.name} <CheckCircle className="w-4 h-4 text-green-500" /></p>
+                    <p className="text-sm text-muted-foreground font-normal">{selectedWorker.skillNames.join(", ")}</p>
+                  </div>
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="text-lg font-bold text-foreground">{selectedWorker.rating > 0 ? selectedWorker.rating : "—"}</p>
+                    <p className="text-xs text-muted-foreground">Rating</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="text-lg font-bold text-foreground">{selectedWorker.years_experience || 0}</p>
+                    <p className="text-xs text-muted-foreground">Years Exp.</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="text-lg font-bold text-foreground">{selectedWorker.hourly_rate ? `$${selectedWorker.hourly_rate}` : "—"}</p>
+                    <p className="text-xs text-muted-foreground">Per Hour</p>
+                  </div>
+                </div>
+
+                {selectedWorker.bio && (
+                  <div>
+                    <h4 className="text-sm font-medium text-foreground mb-1">About</h4>
+                    <p className="text-sm text-muted-foreground">{selectedWorker.bio}</p>
+                  </div>
+                )}
+
+                {workerCerts.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium text-foreground mb-2">Certifications</h4>
+                    <div className="space-y-1">
+                      {workerCerts.map((cert) => (
+                        <div key={cert.id} className="flex items-center justify-between p-2 rounded bg-muted/50 text-sm">
+                          <span className="text-foreground">{cert.name}</span>
+                          {cert.file_url && <a href={cert.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View</a>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {workerReviews.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium text-foreground mb-2">Reviews</h4>
+                    <div className="space-y-2">
+                      {workerReviews.map((r) => (
+                        <div key={r.id} className="p-2 rounded bg-muted/50">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="flex gap-0.5">
+                              {[1, 2, 3, 4, 5].map((s) => (
+                                <Star key={s} className={`w-3 h-3 ${s <= r.rating ? "text-chart-4 fill-current" : "text-muted-foreground"}`} />
+                              ))}
+                            </div>
+                            <span className="text-xs text-muted-foreground">{(r as any).profiles?.name || "Customer"}</span>
+                          </div>
+                          {r.comment && <p className="text-xs text-muted-foreground">{r.comment}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
