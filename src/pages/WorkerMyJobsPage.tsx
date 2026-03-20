@@ -75,7 +75,7 @@ export default function WorkerMyJobsPage() {
   };
 
   const updateJobStatus = async (jobId: string, status: string) => {
-    await supabase.from("jobs").update({ status }).eq("id", jobId);
+    await supabase.from("jobs").update({ status: status as any }).eq("id", jobId);
     toast({ title: `Job marked as ${status.replace("_", " ")}` });
     loadData();
   };
