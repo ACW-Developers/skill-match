@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import { Users, Search, MoreVertical, Shield, Wrench, User } from "lucide-react";
+import { Users, Search, MoreVertical, Shield, Wrench, User, Ban, Trash2, UserCog } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const roleIcon = (role: string) => {
   if (role === "admin") return <Shield className="w-3.5 h-3.5" />;
@@ -14,16 +17,20 @@ const roleIcon = (role: string) => {
 };
 
 export default function UserManagementPage() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const [roleDialog, setRoleDialog] = useState<any>(null);
+  const [newRole, setNewRole] = useState("");
+  const [deleteDialog, setDeleteDialog] = useState<any>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   async function loadUsers() {
     const { data: profiles } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
     if (!profiles) { setLoading(false); return; }
 
-    const userIds = profiles.map(p => p.id);
     const { data: roles } = await supabase.from("user_roles").select("user_id, role");
     const { data: workerProfiles } = await supabase.from("worker_profiles").select("user_id, verification_status");
 
@@ -35,21 +42,60 @@ export default function UserManagementPage() {
     setUsers(profiles.map(p => ({
       ...p,
       role: roleMap[p.id] || "customer",
-      status: roleMap[p.id] === "worker" ? (wpMap[p.id] === "approved" ? "Active" : wpMap[p.id] === "pending" ? "Pending" : "Rejected") : "Active",
+      verificationStatus: wpMap[p.id] || null,
+      status: !(p as any).is_active ? "Inactive" :
+        roleMap[p.id] === "worker" ? (wpMap[p.id] === "approved" ? "Active" : wpMap[p.id] === "pending" ? "Pending" : "Rejected") : "Active",
     })));
     setLoading(false);
   }
 
-  useEffect(() => { loadUsers(); }, []);
+  useEffect(() => {
+    loadUsers();
+    // Realtime subscription
+    const channel = supabase.channel("user-mgmt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => loadUsers())
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_roles" }, () => loadUsers())
+      .on("postgres_changes", { event: "*", schema: "public", table: "worker_profiles" }, () => loadUsers())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const filtered = users.filter(u =>
-    u.name.toLowerCase().includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase())
+    u.name?.toLowerCase().includes(search.toLowerCase()) ||
+    u.email?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleDeleteUser = async (userId: string) => {
-    // Only admins can see this page, delete via activity log
-    toast({ title: "User deletion requires backend admin action", description: "Contact system administrator." });
+  const callAdminApi = async (body: any) => {
+    setActionLoading(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await supabase.functions.invoke("admin-manage-user", {
+      body,
+      headers: { Authorization: `Bearer ${session?.access_token}` },
+    });
+    setActionLoading(false);
+    if (res.error || res.data?.error) {
+      toast({ title: "Error", description: res.data?.error || res.error?.message, variant: "destructive" });
+      return false;
+    }
+    return true;
+  };
+
+  const handleChangeRole = async () => {
+    if (!roleDialog || !newRole) return;
+    const ok = await callAdminApi({ action: "change_role", userId: roleDialog.id, newRole });
+    if (ok) { toast({ title: "Role updated" }); setRoleDialog(null); loadUsers(); }
+  };
+
+  const handleToggleActive = async (u: any) => {
+    const newActive = u.status === "Inactive";
+    const ok = await callAdminApi({ action: "toggle_active", userId: u.id, isActive: newActive });
+    if (ok) { toast({ title: newActive ? "User activated" : "User deactivated" }); loadUsers(); }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteDialog) return;
+    const ok = await callAdminApi({ action: "delete_user", userId: deleteDialog.id });
+    if (ok) { toast({ title: "User deleted permanently" }); setDeleteDialog(null); loadUsers(); }
   };
 
   if (loading) {
@@ -67,7 +113,7 @@ export default function UserManagementPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">User Management</h1>
-          <p className="text-muted-foreground text-sm">Manage platform users and roles</p>
+          <p className="text-muted-foreground text-sm">Manage platform users, roles, and access</p>
         </div>
       </div>
 
@@ -94,7 +140,7 @@ export default function UserManagementPage() {
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold">
-                        {u.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
+                        {u.name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() || "U"}
                       </div>
                       <div>
                         <p className="font-medium text-foreground">{u.name}</p>
@@ -111,21 +157,33 @@ export default function UserManagementPage() {
                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                       u.status === "Active" ? "bg-green-500/10 text-green-500" :
                       u.status === "Pending" ? "bg-chart-4/10 text-chart-4" :
+                      u.status === "Inactive" ? "bg-muted text-muted-foreground" :
                       "bg-destructive/10 text-destructive"
                     }`}>{u.status}</span>
                   </td>
                   <td className="p-4 text-muted-foreground">{new Date(u.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</td>
                   <td className="p-4">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="w-8 h-8">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleDeleteUser(u.id)}>Remove User</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    {u.id !== currentUser?.id && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="w-8 h-8">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => { setRoleDialog(u); setNewRole(u.role); }}>
+                            <UserCog className="w-4 h-4 mr-2" /> Change Role
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleToggleActive(u)}>
+                            <Ban className="w-4 h-4 mr-2" /> {u.status === "Inactive" ? "Activate" : "Deactivate"}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setDeleteDialog(u)} className="text-destructive focus:text-destructive">
+                            <Trash2 className="w-4 h-4 mr-2" /> Delete Permanently
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </td>
                 </tr>
               )) : (
@@ -137,6 +195,37 @@ export default function UserManagementPage() {
           </table>
         </div>
       </div>
+
+      {/* Change Role Dialog */}
+      <Dialog open={!!roleDialog} onOpenChange={(o) => !o && setRoleDialog(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Change Role for {roleDialog?.name}</DialogTitle></DialogHeader>
+          <Select value={newRole} onValueChange={setNewRole}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="worker">Worker</SelectItem>
+              <SelectItem value="customer">Customer</SelectItem>
+            </SelectContent>
+          </Select>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRoleDialog(null)}>Cancel</Button>
+            <Button onClick={handleChangeRole} disabled={actionLoading}>{actionLoading ? "Saving..." : "Save"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteDialog} onOpenChange={(o) => !o && setDeleteDialog(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Delete {deleteDialog?.name}?</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">This action is permanent and cannot be undone. All user data will be removed.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialog(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={actionLoading}>{actionLoading ? "Deleting..." : "Delete"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

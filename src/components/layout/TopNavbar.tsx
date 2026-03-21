@@ -1,9 +1,13 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Bell, LogOut, Sun, Moon } from "lucide-react";
+import { Bell, LogOut, Sun, Moon, User, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useState } from "react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function TopNavbar() {
   const { user, logout } = useAuth();
@@ -39,18 +43,32 @@ export function TopNavbar() {
         <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
           <Bell className="w-4 h-4" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={handleLogout} className="text-muted-foreground hover:text-foreground">
-          <LogOut className="w-4 h-4" />
-        </Button>
-        <div className="flex items-center gap-3 ml-2 pl-3 border-l border-border">
-          <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
-            {initials}
-          </div>
-          <div className="hidden sm:block">
-            <p className="text-sm font-medium text-foreground leading-none">{user?.name}</p>
-            <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
-          </div>
-        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-3 ml-2 pl-3 border-l border-border cursor-pointer hover:opacity-80 transition-opacity">
+              <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
+                {initials}
+              </div>
+              <div className="hidden sm:block text-left">
+                <p className="text-sm font-medium text-foreground leading-none">{user?.name}</p>
+                <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
+              </div>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={() => navigate("/dashboard/profile")}>
+              <User className="w-4 h-4 mr-2" /> Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/dashboard/settings")}>
+              <Settings className="w-4 h-4 mr-2" /> Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+              <LogOut className="w-4 h-4 mr-2" /> Logout
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

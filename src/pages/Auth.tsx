@@ -4,9 +4,10 @@ import { useAuth, type UserRole } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Wrench, Mail, Lock, User, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import heroImage from "@/assets/workers-hero.jpg";
+import logo from "@/assets/logo.png";
 
 const Auth = () => {
   const [isSignIn, setIsSignIn] = useState(true);
@@ -49,7 +50,7 @@ const Auth = () => {
   return (
     <div className="flex min-h-screen">
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        <img src={heroImage} alt="Skilled workers" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={heroImage} alt="Skilled workers on site" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
         <div className="relative z-10 flex flex-col justify-end p-12 text-white">
           <h2 className="text-3xl font-bold leading-tight mb-3" style={{ textWrap: "balance" }}>
@@ -64,10 +65,10 @@ const Auth = () => {
       <div className="flex-1 flex items-center justify-center bg-card p-8 dark:bg-background">
         <div className="w-full max-w-md animate-fade-in">
           <div className="text-center mb-10">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-4">
-              <Wrench className="w-7 h-7 text-primary" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl overflow-hidden mb-4">
+              <img src={logo} alt="FundiPlug" className="w-full h-full object-cover" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">SkillHub</h1>
+            <h1 className="text-2xl font-bold text-foreground">FundiPlug</h1>
             <p className="text-muted-foreground text-sm mt-1">Skilled Workers Marketplace</p>
           </div>
 
