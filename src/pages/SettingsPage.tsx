@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import { Settings, Bell, Shield } from "lucide-react";
+import { Settings, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -14,7 +13,7 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const [profileName, setProfileName] = useState("");
   const [phone, setPhone] = useState("");
-  const [platformName, setPlatformName] = useState("SkillHub");
+  const [platformName, setPlatformName] = useState("FundiPlug");
   const [commissionRate, setCommissionRate] = useState("15");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -58,7 +57,6 @@ export default function SettingsPage() {
       <div className="space-y-6 max-w-3xl">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-48 rounded-xl" />
-        <Skeleton className="h-48 rounded-xl" />
       </div>
     );
   }
@@ -71,7 +69,6 @@ export default function SettingsPage() {
       </div>
 
       <div className="space-y-4">
-        {/* Profile */}
         <div className="stat-card animate-fade-in">
           <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
             <Settings className="w-5 h-5 text-primary" /> Profile
@@ -91,7 +88,6 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Admin: Platform Settings */}
         {user?.role === "admin" && (
           <div className="stat-card animate-fade-in" style={{ animationDelay: "100ms" }}>
             <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
@@ -113,7 +109,6 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* Security */}
         <div className="stat-card animate-fade-in" style={{ animationDelay: "200ms" }}>
           <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
             <Shield className="w-5 h-5 text-primary" /> Security

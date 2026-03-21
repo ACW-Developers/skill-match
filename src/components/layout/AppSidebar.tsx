@@ -2,18 +2,17 @@ import { useLocation } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  LayoutDashboard, Users, CalendarDays, ClipboardList, Wrench, MapPin, Star, Briefcase, Search,
-  BarChart3, Activity, Settings, ChevronLeft, Shield, CreditCard, MessageSquare, UserCog,
+  LayoutDashboard, Users, CalendarDays, ClipboardList, MapPin, Star, Briefcase, Search,
+  BarChart3, Activity, Settings, ChevronLeft, Shield, CreditCard, UserCog,
 } from "lucide-react";
 import {
-  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
+  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
+import logo from "@/assets/logo.png";
 
 const adminNav = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Workers", url: "/dashboard/workers", icon: Wrench },
-  { title: "Customers", url: "/dashboard/customers", icon: Users },
   { title: "Verification", url: "/dashboard/verification", icon: Shield },
   { title: "Jobs", url: "/dashboard/jobs", icon: Briefcase },
   { title: "Categories", url: "/dashboard/categories", icon: ClipboardList },
@@ -54,10 +53,10 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r-0">
       <div className="h-16 flex items-center gap-3 px-4 border-b border-sidebar-border">
-        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
-          <Wrench className="w-4 h-4 text-primary-foreground" />
+        <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0">
+          <img src={logo} alt="FundiPlug" className="w-full h-full object-cover" />
         </div>
-        {!collapsed && <span className="font-bold text-sidebar-accent-foreground text-lg">SkillHub</span>}
+        {!collapsed && <span className="font-bold text-sidebar-accent-foreground text-lg">FundiPlug</span>}
       </div>
       <SidebarContent className="scrollbar-thin">
         <SidebarGroup>
