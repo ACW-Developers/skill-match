@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Users, Briefcase, CreditCard, Wrench, TrendingUp, CheckCircle } from "lucide-react";
+import { Users, Briefcase, CreditCard, Wrench, TrendingUp, CheckCircle, DollarSign } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,7 +14,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   async function load() {
-    const [profilesRes, workersRes, jobsRes, paymentsRes, pendingRes, activeJobsRes, categoriesRes] = await Promise.all([
+    const [profilesRes, workersRes, jobsRes, paymentsRes, pendingRes, activeJobsRes, categoriesRes, commRes] = await Promise.all([
       supabase.from("profiles").select("id", { count: "exact", head: true }),
       supabase.from("worker_profiles").select("id", { count: "exact", head: true }).eq("verification_status", "approved"),
       supabase.from("jobs").select("id", { count: "exact", head: true }).eq("status", "completed"),
@@ -22,15 +22,17 @@ export default function AdminDashboard() {
       supabase.from("worker_profiles").select("id", { count: "exact", head: true }).eq("verification_status", "pending"),
       supabase.from("jobs").select("id", { count: "exact", head: true }).in("status", ["pending", "accepted", "in_progress"]),
       supabase.from("service_categories").select("id, name"),
+      supabase.from("payments").select("commission").eq("status", "completed"),
     ]);
     const revenue = (paymentsRes.data || []).reduce((sum, p) => sum + Number(p.amount), 0);
+    const commission = (commRes.data || []).reduce((sum, p) => sum + Number(p.commission || 0), 0);
     setStats([
       { label: "Total Users", value: profilesRes.count ?? 0, icon: Users, color: "text-chart-3", bg: "bg-chart-3/10" },
       { label: "Active Workers", value: workersRes.count ?? 0, icon: Wrench, color: "text-chart-2", bg: "bg-chart-2/10" },
       { label: "Jobs Completed", value: jobsRes.count ?? 0, icon: CheckCircle, color: "text-primary", bg: "bg-primary/10" },
       { label: "Revenue", value: `$${revenue.toLocaleString()}`, icon: CreditCard, color: "text-chart-4", bg: "bg-chart-4/10" },
+      { label: "Commission", value: `$${commission.toLocaleString()}`, icon: DollarSign, color: "text-green-500", bg: "bg-green-500/10" },
       { label: "Pending Verifications", value: pendingRes.count ?? 0, icon: TrendingUp, color: "text-chart-5", bg: "bg-chart-5/10" },
-      { label: "Active Jobs", value: activeJobsRes.count ?? 0, icon: Briefcase, color: "text-primary", bg: "bg-primary/10" },
     ]);
     const cats = categoriesRes.data || [];
     const { data: workerSkills } = await supabase.from("worker_profiles").select("skills");
@@ -52,7 +54,7 @@ export default function AdminDashboard() {
     const channel = supabase.channel("admin-dash-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "jobs" }, () => load())
       .on("postgres_changes", { event: "*", schema: "public", table: "worker_profiles" }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "activity_logs" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "payments" }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);

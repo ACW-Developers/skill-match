@@ -2,21 +2,25 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CalendarDays, Star } from "lucide-react";
+import { CalendarDays, Star, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useSearchParams } from "react-router-dom";
 
 export default function CustomerBookingsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [jobs, setJobs] = useState<any[]>([]);
   const [reviewDialog, setReviewDialog] = useState<any>(null);
+  const [payDialog, setPayDialog] = useState<any>(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [paying, setPaying] = useState(false);
 
   async function loadData() {
     if (!user) return;
@@ -27,7 +31,6 @@ export default function CustomerBookingsPage() {
       .in("status", ["accepted", "in_progress", "completed"])
       .order("created_at", { ascending: false });
 
-    // Get worker names
     const workerIds = (data || []).map(j => j.worker_id).filter(Boolean);
     const { data: workerProfiles } = workerIds.length > 0
       ? await supabase.from("profiles").select("id, name").in("id", workerIds)
@@ -35,22 +38,73 @@ export default function CustomerBookingsPage() {
     const nameMap: Record<string, string> = {};
     (workerProfiles || []).forEach(p => { nameMap[p.id] = p.name; });
 
-    // Check which jobs already have reviews
     const jobIds = (data || []).map(j => j.id);
-    const { data: existingReviews } = jobIds.length > 0
-      ? await supabase.from("reviews").select("job_id").eq("reviewer_id", user.id).in("job_id", jobIds)
-      : { data: [] };
-    const reviewedJobIds = new Set((existingReviews || []).map(r => r.job_id));
+    const [existingReviews, existingPayments] = await Promise.all([
+      jobIds.length > 0
+        ? supabase.from("reviews").select("job_id").eq("reviewer_id", user.id).in("job_id", jobIds)
+        : Promise.resolve({ data: [] }),
+      jobIds.length > 0
+        ? supabase.from("payments").select("job_id, status").in("job_id", jobIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    const reviewedJobIds = new Set((existingReviews.data || []).map(r => r.job_id));
+    const paidJobMap: Record<string, string> = {};
+    (existingPayments.data || []).forEach(p => { paidJobMap[p.job_id] = p.status; });
 
     setJobs((data || []).map(j => ({
       ...j,
       workerName: nameMap[j.worker_id] || "Assigned Worker",
       hasReview: reviewedJobIds.has(j.id),
+      paymentStatus: paidJobMap[j.id] || null,
     })));
     setLoading(false);
   }
 
   useEffect(() => { loadData(); }, [user]);
+
+  // Handle payment return
+  useEffect(() => {
+    const paymentStatus = searchParams.get("payment");
+    const paymentId = searchParams.get("payment_id");
+    if (paymentStatus === "success" && paymentId) {
+      // Verify payment
+      (async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        await supabase.functions.invoke("verify-payment", {
+          body: { paymentId },
+          headers: { Authorization: `Bearer ${session?.access_token}` },
+        });
+        toast({ title: "Payment successful!", description: "Your payment has been processed." });
+        loadData();
+      })();
+    }
+  }, [searchParams]);
+
+  // Show pay popup for completed jobs without payment
+  useEffect(() => {
+    if (!loading && jobs.length > 0) {
+      const unpaid = jobs.find(j => j.status === "completed" && !j.paymentStatus);
+      if (unpaid && !payDialog) setPayDialog(unpaid);
+    }
+  }, [jobs, loading]);
+
+  const handlePay = async (job: any) => {
+    setPaying(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const { data, error } = await supabase.functions.invoke("create-payment", {
+        body: { jobId: job.id, amount: job.budget || 50, workerId: job.worker_id },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      if (data?.url) window.location.href = data.url;
+    } catch (err: any) {
+      toast({ title: "Payment failed", description: err.message, variant: "destructive" });
+    } finally {
+      setPaying(false);
+    }
+  };
 
   const submitReview = async () => {
     if (!reviewDialog || !user) return;
@@ -87,19 +141,32 @@ export default function CustomerBookingsPage() {
                       job.status === "in_progress" ? "bg-primary/10 text-primary" :
                       "bg-chart-4/10 text-chart-4"
                     }`}>{job.status.replace("_", " ")}</span>
+                    {job.paymentStatus && (
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
+                        job.paymentStatus === "completed" ? "bg-green-500/10 text-green-500" :
+                        job.paymentStatus === "pending" ? "bg-chart-4/10 text-chart-4" : ""
+                      }`}>💰 {job.paymentStatus}</span>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Worker: {job.workerName} · {job.budget ? `$${job.budget}` : "Open"} · {new Date(job.created_at).toLocaleDateString()}
                   </p>
                 </div>
-                {job.status === "completed" && !job.hasReview && (
-                  <Button size="sm" variant="outline" onClick={() => setReviewDialog(job)} className="active:scale-[0.97]">
-                    <Star className="w-4 h-4 mr-1" /> Review
-                  </Button>
-                )}
-                {job.hasReview && (
-                  <span className="text-xs text-green-500 flex items-center gap-1"><Star className="w-3 h-3 fill-current" /> Reviewed</span>
-                )}
+                <div className="flex gap-2">
+                  {job.status === "completed" && !job.paymentStatus && (
+                    <Button size="sm" onClick={() => handlePay(job)} className="active:scale-[0.97]">
+                      <CreditCard className="w-4 h-4 mr-1" /> Pay
+                    </Button>
+                  )}
+                  {job.status === "completed" && job.paymentStatus === "completed" && !job.hasReview && (
+                    <Button size="sm" variant="outline" onClick={() => setReviewDialog(job)} className="active:scale-[0.97]">
+                      <Star className="w-4 h-4 mr-1" /> Review
+                    </Button>
+                  )}
+                  {job.hasReview && (
+                    <span className="text-xs text-green-500 flex items-center gap-1"><Star className="w-3 h-3 fill-current" /> Reviewed</span>
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -112,6 +179,30 @@ export default function CustomerBookingsPage() {
         </div>
       )}
 
+      {/* Payment Prompt Dialog */}
+      <Dialog open={!!payDialog} onOpenChange={(open) => !open && setPayDialog(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Payment Required</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              The service for <strong className="text-foreground">{payDialog?.title}</strong> has been completed by <strong className="text-foreground">{payDialog?.workerName}</strong>.
+            </p>
+            <div className="p-4 rounded-lg bg-muted/50 flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Amount Due</span>
+              <span className="text-2xl font-bold text-foreground">${payDialog?.budget || 50}</span>
+            </div>
+            <p className="text-xs text-muted-foreground">A platform commission will be deducted. The worker receives the net amount.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPayDialog(null)}>Later</Button>
+            <Button onClick={() => { setPayDialog(null); handlePay(payDialog); }} disabled={paying}>
+              <CreditCard className="w-4 h-4 mr-2" /> {paying ? "Processing..." : "Pay Now"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Review Dialog */}
       <Dialog open={!!reviewDialog} onOpenChange={(open) => !open && setReviewDialog(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>Rate Worker</DialogTitle></DialogHeader>
