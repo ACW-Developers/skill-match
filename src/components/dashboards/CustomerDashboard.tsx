@@ -6,6 +6,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 
+const DEFAULT_CATEGORY_IMAGES: Record<string, string> = {
+  "Electrician": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&h=300&fit=crop",
+  "Plumber": "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=400&h=300&fit=crop",
+  "Carpenter": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400&h=300&fit=crop",
+  "Painter": "https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=400&h=300&fit=crop",
+  "Mason": "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400&h=300&fit=crop",
+  "Welder": "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=400&h=300&fit=crop",
+  "Mechanic": "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=400&h=300&fit=crop",
+  "Cleaner": "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&h=300&fit=crop",
+};
+
 export default function CustomerDashboard() {
   const { user } = useAuth();
   const [categories, setCategories] = useState<any[]>([]);
@@ -16,7 +27,6 @@ export default function CustomerDashboard() {
   useEffect(() => {
     if (!user) return;
     async function load() {
-      // Categories with worker counts
       const { data: cats } = await supabase.from("service_categories").select("*");
       const { data: workers } = await supabase.from("worker_profiles").select("skills");
       const skillCounts: Record<string, number> = {};
@@ -25,7 +35,6 @@ export default function CustomerDashboard() {
       });
       setCategories((cats || []).map(c => ({ ...c, count: skillCounts[c.id] || 0 })));
 
-      // Nearby online workers
       const { data: onlineWorkers } = await supabase
         .from("worker_profiles")
         .select("*, profiles!worker_profiles_user_id_fkey(name, avatar_url)")
@@ -44,7 +53,6 @@ export default function CustomerDashboard() {
         ratingMap[r.reviewee_id].count += 1;
       });
 
-      // Get skill names
       const skillIds = [...new Set((onlineWorkers || []).flatMap(w => w.skills || []))];
       const { data: skillNames } = skillIds.length > 0
         ? await supabase.from("service_categories").select("id, name").in("id", skillIds)
@@ -60,7 +68,6 @@ export default function CustomerDashboard() {
         available: w.is_online,
       })));
 
-      // Customer stats
       const [bookingsRes, paymentsRes, givenReviews] = await Promise.all([
         supabase.from("bookings").select("id", { count: "exact", head: true }).eq("customer_id", user!.id),
         supabase.from("payments").select("amount").eq("payer_id", user!.id).eq("status", "completed"),
@@ -120,13 +127,26 @@ export default function CustomerDashboard() {
       <div className="animate-fade-in" style={{ animationDelay: "200ms" }}>
         <h2 className="text-lg font-semibold text-foreground mb-3">Service Categories</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {categories.map((cat) => (
-            <button key={cat.id} className="stat-card flex flex-col items-center gap-2 py-5 hover:border-primary/40 cursor-pointer transition-colors active:scale-[0.97]">
-              <span className="text-3xl">{cat.icon}</span>
-              <span className="text-sm font-medium text-foreground">{cat.name}</span>
-              <span className="text-xs text-muted-foreground">{cat.count} available</span>
-            </button>
-          ))}
+          {categories.map((cat) => {
+            const img = cat.image_url || DEFAULT_CATEGORY_IMAGES[cat.name] || "";
+            return (
+              <button key={cat.id} className="stat-card overflow-hidden p-0 flex flex-col items-center hover:border-primary/40 cursor-pointer transition-colors active:scale-[0.97]">
+                {img ? (
+                  <div className="w-full h-20 overflow-hidden">
+                    <img src={img} alt={cat.name} className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <div className="w-full h-20 flex items-center justify-center bg-muted">
+                    <span className="text-3xl">{cat.icon}</span>
+                  </div>
+                )}
+                <div className="p-2 text-center">
+                  <span className="text-xs font-medium text-foreground">{cat.name}</span>
+                  <span className="text-[10px] text-muted-foreground block">{cat.count} available</span>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
