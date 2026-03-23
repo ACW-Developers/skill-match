@@ -3,7 +3,6 @@ import { Briefcase, CreditCard, Star, Clock, ToggleLeft, ToggleRight } from "luc
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export default function WorkerDashboard() {
   const { user } = useAuth();
@@ -16,11 +15,9 @@ export default function WorkerDashboard() {
   useEffect(() => {
     if (!user) return;
     async function load() {
-      // Get worker profile
       const { data: wp } = await supabase.from("worker_profiles").select("*").eq("user_id", user!.id).single();
       if (wp) setIsOnline(wp.is_online);
 
-      // Stats
       const [completedRes, pendingRes, paymentsRes, reviewsRes] = await Promise.all([
         supabase.from("jobs").select("id", { count: "exact", head: true }).eq("worker_id", user!.id).eq("status", "completed"),
         supabase.from("jobs").select("id", { count: "exact", head: true }).eq("worker_id", user!.id).eq("status", "pending"),
@@ -39,7 +36,6 @@ export default function WorkerDashboard() {
         pending: pendingRes.count ?? 0,
       });
 
-      // Recent jobs
       const { data: jobs } = await supabase
         .from("jobs")
         .select("*, profiles!jobs_customer_id_fkey(name)")
@@ -48,7 +44,6 @@ export default function WorkerDashboard() {
         .limit(5);
       setRecentJobs(jobs || []);
 
-      // Weekly earnings
       const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
@@ -84,17 +79,14 @@ export default function WorkerDashboard() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-8 w-48" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
-        </div>
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   const statCards = [
-    { label: "Total Earnings", value: `$${stats.earnings.toLocaleString()}`, icon: CreditCard, color: "text-primary", bg: "bg-primary/10" },
+    { label: "Total Earnings", value: `KSH ${stats.earnings.toLocaleString()}`, icon: CreditCard, color: "text-primary", bg: "bg-primary/10" },
     { label: "Jobs Completed", value: String(stats.completed), icon: Briefcase, color: "text-chart-2", bg: "bg-chart-2/10" },
     { label: "Average Rating", value: stats.rating > 0 ? String(stats.rating) : "N/A", icon: Star, color: "text-chart-4", bg: "bg-chart-4/10" },
     { label: "Pending Jobs", value: String(stats.pending), icon: Clock, color: "text-chart-3", bg: "bg-chart-3/10" },
@@ -162,11 +154,11 @@ export default function WorkerDashboard() {
                   <div>
                     <p className="text-sm font-medium text-foreground">{job.title}</p>
                     <p className="text-xs text-muted-foreground">
-                      {(job as any).profiles?.name || "Customer"} · {new Date(job.created_at).toLocaleDateString()}
+                      {(job as any).profiles?.name || "Customer"} - {new Date(job.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-foreground">{job.budget ? `$${job.budget}` : "-"}</p>
+                    <p className="text-sm font-semibold text-foreground">{job.budget ? `KSH ${job.budget}` : "-"}</p>
                     <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${
                       job.status === "completed" ? "bg-green-500/10 text-green-500" :
                       job.status === "in_progress" ? "bg-primary/10 text-primary" :
@@ -177,7 +169,7 @@ export default function WorkerDashboard() {
               ))}
             </div>
           ) : (
-            <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">No jobs yet — set yourself online to start receiving requests</div>
+            <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">No jobs yet - set yourself online to start receiving requests</div>
           )}
         </div>
       </div>

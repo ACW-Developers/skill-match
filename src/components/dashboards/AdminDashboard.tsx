@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Users, Briefcase, CreditCard, Wrench, TrendingUp, CheckCircle, DollarSign } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
-import { Skeleton } from "@/components/ui/skeleton";
 
 const COLORS = ["hsl(22, 93%, 49%)", "hsl(173, 58%, 39%)", "hsl(197, 71%, 53%)", "hsl(43, 96%, 56%)", "hsl(280, 65%, 60%)"];
 const today = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
@@ -30,8 +29,8 @@ export default function AdminDashboard() {
       { label: "Total Users", value: profilesRes.count ?? 0, icon: Users, color: "text-chart-3", bg: "bg-chart-3/10" },
       { label: "Active Workers", value: workersRes.count ?? 0, icon: Wrench, color: "text-chart-2", bg: "bg-chart-2/10" },
       { label: "Jobs Completed", value: jobsRes.count ?? 0, icon: CheckCircle, color: "text-primary", bg: "bg-primary/10" },
-      { label: "Revenue", value: `$${revenue.toLocaleString()}`, icon: CreditCard, color: "text-chart-4", bg: "bg-chart-4/10" },
-      { label: "Commission", value: `$${commission.toLocaleString()}`, icon: DollarSign, color: "text-green-500", bg: "bg-green-500/10" },
+      { label: "Revenue", value: `KSH ${revenue.toLocaleString()}`, icon: CreditCard, color: "text-chart-4", bg: "bg-chart-4/10" },
+      { label: "Commission", value: `KSH ${commission.toLocaleString()}`, icon: DollarSign, color: "text-green-500", bg: "bg-green-500/10" },
       { label: "Pending Verifications", value: pendingRes.count ?? 0, icon: TrendingUp, color: "text-chart-5", bg: "bg-chart-5/10" },
     ]);
     const cats = categoriesRes.data || [];
@@ -60,7 +59,13 @@ export default function AdminDashboard() {
   }, []);
 
   if (loading) {
-    return <div className="space-y-6"><Skeleton className="h-8 w-48" /><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}</div></div>;
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      </div>
+    );
   }
 
   return (

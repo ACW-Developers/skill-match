@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { BarChart3, Download, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ReportsPage() {
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
@@ -46,9 +45,8 @@ export default function ReportsPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-96 rounded-xl" />
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -76,13 +74,14 @@ export default function ReportsPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 20%)" />
               <XAxis dataKey="month" stroke="hsl(220, 10%, 46%)" fontSize={12} />
               <YAxis stroke="hsl(220, 10%, 46%)" fontSize={12} />
-              <Tooltip contentStyle={{ backgroundColor: "hsl(222, 28%, 12%)", border: "1px solid hsl(222, 20%, 20%)", borderRadius: "8px", color: "hsl(220, 14%, 90%)" }} />
-              <Bar dataKey="revenue" fill="hsl(22, 93%, 49%)" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="jobs" fill="hsl(173, 58%, 39%)" radius={[4, 4, 0, 0]} />
+              <Tooltip contentStyle={{ backgroundColor: "hsl(222, 28%, 12%)", border: "1px solid hsl(222, 20%, 20%)", borderRadius: "8px", color: "hsl(220, 14%, 90%)" }} formatter={(value: any, name: string) => [name === "revenue" ? `KSH ${Number(value).toLocaleString()}` : value, name === "revenue" ? "Revenue" : "Jobs"]} />
+              <Legend />
+              <Bar dataKey="revenue" fill="hsl(22, 93%, 49%)" radius={[4, 4, 0, 0]} name="Revenue (KSH)" />
+              <Bar dataKey="jobs" fill="hsl(173, 58%, 39%)" radius={[4, 4, 0, 0]} name="Jobs" />
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <div className="h-80 flex items-center justify-center text-muted-foreground text-sm">No report data yet — data will appear as jobs and payments are created</div>
+          <div className="h-80 flex items-center justify-center text-muted-foreground text-sm">No report data yet - data will appear as jobs and payments are created</div>
         )}
       </div>
     </div>

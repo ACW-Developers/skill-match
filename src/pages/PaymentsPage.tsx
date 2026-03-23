@@ -1,39 +1,55 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Skeleton } from "@/components/ui/skeleton";
 import { CreditCard, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 export default function PaymentsPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [payments, setPayments] = useState<any[]>([]);
   const [search, setSearch] = useState("");
+  const [chartData, setChartData] = useState<any[]>([]);
   const isAdmin = user?.role === "admin";
+  const isWorker = user?.role === "worker";
 
   useEffect(() => {
     if (!user) return;
     async function load() {
       let query = supabase.from("payments").select("*, jobs:job_id(title)").order("created_at", { ascending: false });
-      if (!isAdmin) {
-        // For customers, show payments they made
+      if (!isAdmin && isWorker) {
+        query = query.eq("payee_id", user!.id);
+      } else if (!isAdmin) {
         query = query.eq("payer_id", user!.id);
       }
       const { data } = await query;
 
-      // Get payer/payee names
       const allIds = [...new Set((data || []).flatMap(p => [p.payer_id, p.payee_id]))];
       const { data: profiles } = allIds.length > 0 ? await supabase.from("profiles").select("id, name").in("id", allIds) : { data: [] };
       const nameMap: Record<string, string> = {};
       (profiles || []).forEach(p => { nameMap[p.id] = p.name; });
 
-      setPayments((data || []).map(p => ({
+      const mapped = (data || []).map(p => ({
         ...p,
-        payerName: nameMap[p.payer_id] || "—",
-        payeeName: nameMap[p.payee_id] || "—",
-        jobTitle: (p as any).jobs?.title || "—",
-      })));
+        payerName: nameMap[p.payer_id] || "-",
+        payeeName: nameMap[p.payee_id] || "-",
+        jobTitle: (p as any).jobs?.title || "-",
+      }));
+      setPayments(mapped);
+
+      // Build monthly chart
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const monthlyAmounts: Record<string, number> = {};
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(); d.setMonth(d.getMonth() - i);
+        monthlyAmounts[months[d.getMonth()]] = 0;
+      }
+      mapped.filter(p => p.status === "completed").forEach(p => {
+        const m = months[new Date(p.created_at).getMonth()];
+        if (monthlyAmounts[m] !== undefined) monthlyAmounts[m] += Number(p.amount);
+      });
+      setChartData(Object.entries(monthlyAmounts).map(([month, amount]) => ({ month, amount: Math.round(amount) })));
       setLoading(false);
     }
     load();
@@ -45,7 +61,13 @@ export default function PaymentsPage() {
     p.payeeName.toLowerCase().includes(search.toLowerCase())
   );
 
-  if (loading) return <div className="space-y-6"><Skeleton className="h-8 w-48" /><Skeleton className="h-96 rounded-xl" /></div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -53,6 +75,23 @@ export default function PaymentsPage() {
         <h1 className="text-2xl font-bold text-foreground">Payments</h1>
         <p className="text-muted-foreground text-sm">{isAdmin ? "All platform transactions" : "Your payment history"}</p>
       </div>
+
+      {/* Payment visualization */}
+      {chartData.some(d => d.amount > 0) && (
+        <div className="stat-card animate-fade-in">
+          <h3 className="text-lg font-semibold text-foreground mb-4">Monthly Payments</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 20%)" />
+              <XAxis dataKey="month" stroke="hsl(220, 10%, 46%)" fontSize={12} />
+              <YAxis stroke="hsl(220, 10%, 46%)" fontSize={12} />
+              <Tooltip contentStyle={{ backgroundColor: "hsl(222, 28%, 12%)", border: "1px solid hsl(222, 20%, 20%)", borderRadius: "8px", color: "hsl(220, 14%, 90%)" }} formatter={(value: any) => [`KSH ${Number(value).toLocaleString()}`, "Amount"]} />
+              <Bar dataKey="amount" fill="hsl(22, 93%, 49%)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input placeholder="Search payments..." className="pl-10 bg-card" value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -78,8 +117,8 @@ export default function PaymentsPage() {
                     <td className="p-4 text-foreground">{p.jobTitle}</td>
                     {isAdmin && <td className="p-4 text-muted-foreground">{p.payerName}</td>}
                     {isAdmin && <td className="p-4 text-muted-foreground">{p.payeeName}</td>}
-                    <td className="p-4 text-foreground tabular-nums">${Number(p.amount).toLocaleString()}</td>
-                    <td className="p-4 text-muted-foreground tabular-nums">{p.commission ? `$${Number(p.commission).toLocaleString()}` : "—"}</td>
+                    <td className="p-4 text-foreground tabular-nums">KSH {Number(p.amount).toLocaleString()}</td>
+                    <td className="p-4 text-muted-foreground tabular-nums">{p.commission ? `KSH ${Number(p.commission).toLocaleString()}` : "-"}</td>
                     <td className="p-4">
                       <span className={`px-2 py-0.5 rounded-full text-xs capitalize ${
                         p.status === "completed" ? "bg-green-500/10 text-green-500" :
@@ -87,7 +126,7 @@ export default function PaymentsPage() {
                         "bg-destructive/10 text-destructive"
                       }`}>{p.status}</span>
                     </td>
-                    <td className="p-4 text-muted-foreground">{new Date(p.created_at).toLocaleDateString()}</td>
+                    <td className="p-4 text-muted-foreground text-xs">{new Date(p.created_at).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>

@@ -58,20 +58,24 @@ export function AppSidebar() {
         </div>
         {!collapsed && <span className="font-bold text-sidebar-accent-foreground text-lg">FundiPlug</span>}
       </div>
-      <SidebarContent className="scrollbar-thin">
+      <SidebarContent className="scrollbar-thin py-2">
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1 px-2">
               {navItems.map((item) => {
                 const active = location.pathname === item.url;
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={active}>
+                    <SidebarMenuButton asChild isActive={active} className="h-10">
                       <NavLink
                         to={item.url}
                         end={item.url === "/dashboard"}
-                        className={`transition-colors duration-150 ${active ? "bg-primary text-primary-foreground" : "hover:bg-sidebar-accent"}`}
-                        activeClassName="bg-primary text-primary-foreground"
+                        className={`rounded-lg border transition-all duration-150 text-[13px] font-medium ${
+                          active
+                            ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                            : "border-sidebar-border hover:bg-primary/10 hover:text-primary hover:border-primary/40"
+                        }`}
+                        activeClassName="bg-primary text-primary-foreground border-primary"
                       >
                         <item.icon className="w-4 h-4 shrink-0" />
                         {!collapsed && <span>{item.title}</span>}
@@ -85,7 +89,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border">
-        <button onClick={toggleSidebar} className="flex items-center gap-2 px-3 py-2 text-sm text-sidebar-foreground hover:text-sidebar-accent-foreground transition-colors">
+        <button onClick={toggleSidebar} className="flex items-center gap-2 px-3 py-2 text-sm text-sidebar-foreground hover:text-primary transition-colors">
           <ChevronLeft className={`w-4 h-4 transition-transform duration-200 ${collapsed ? "rotate-180" : ""}`} />
           {!collapsed && <span>Collapse</span>}
         </button>

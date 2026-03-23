@@ -57,22 +57,22 @@ const Auth = () => {
             Connect with Skilled Professionals
           </h2>
           <p className="text-white/70 text-lg max-w-md">
-            Find verified electricians, plumbers, carpenters and more — on demand or scheduled.
+            Find verified electricians, plumbers, carpenters and more - on demand or scheduled.
           </p>
         </div>
       </div>
 
       <div className="flex-1 flex items-center justify-center bg-card p-8 dark:bg-background">
         <div className="w-full max-w-md animate-fade-in">
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl overflow-hidden mb-4">
-              <img src={logo} alt="FundiPlug" className="w-full h-full object-cover" />
-            </div>
-            <h1 className="text-2xl font-bold text-foreground">FundiPlug</h1>
-            <p className="text-muted-foreground text-sm mt-1">Skilled Workers Marketplace</p>
-          </div>
-
           <div className="border border-border rounded-2xl p-6 bg-card/50">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl overflow-hidden mb-4">
+                <img src={logo} alt="FundiPlug" className="w-full h-full object-cover" />
+              </div>
+              <h1 className="text-2xl font-bold text-foreground">FundiPlug</h1>
+              <p className="text-muted-foreground text-sm mt-1">Skilled Workers Marketplace</p>
+            </div>
+
             <div className="flex bg-muted rounded-lg p-1 mb-6">
               <button
                 onClick={() => { setIsSignIn(true); setError(""); }}
@@ -154,11 +154,11 @@ const Auth = () => {
                 {loading ? "Please wait..." : isSignIn ? "Sign In" : "Create Account"}
               </Button>
             </form>
-          </div>
 
-          <div className="mt-6 text-center space-y-1">
-            <p className="text-xs text-muted-foreground">© Digimatt Solutions 2026</p>
-            <button className="text-xs text-primary hover:underline">Privacy Policy</button>
+            <div className="mt-6 text-center space-y-1">
+              <p className="text-xs text-muted-foreground">© Digimatt Solutions 2026</p>
+              <button className="text-xs text-primary hover:underline">Privacy Policy</button>
+            </div>
           </div>
         </div>
       </div>

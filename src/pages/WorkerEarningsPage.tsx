@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Skeleton } from "@/components/ui/skeleton";
 import { CreditCard, TrendingUp, DollarSign, ArrowUpRight } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -26,7 +25,6 @@ export default function WorkerEarningsPage() {
       setTotal(all.filter(p => p.status === "completed").reduce((s, p) => s + Number(p.amount), 0));
       setPending(all.filter(p => p.status === "pending").reduce((s, p) => s + Number(p.amount), 0));
 
-      // Weekly earnings chart
       const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
       const dayCounts: Record<string, number> = {};
       for (let i = 0; i < 7; i++) {
@@ -44,7 +42,13 @@ export default function WorkerEarningsPage() {
     load();
   }, [user]);
 
-  if (loading) return <div className="space-y-6"><Skeleton className="h-8 w-48" /><Skeleton className="h-96 rounded-xl" /></div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -58,7 +62,7 @@ export default function WorkerEarningsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Total Earned</p>
-              <p className="text-3xl font-bold text-foreground tabular-nums">${total.toLocaleString()}</p>
+              <p className="text-3xl font-bold text-foreground tabular-nums">KSH {total.toLocaleString()}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
               <TrendingUp className="w-6 h-6 text-primary" />
@@ -69,7 +73,7 @@ export default function WorkerEarningsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Pending</p>
-              <p className="text-3xl font-bold text-foreground tabular-nums">${pending.toLocaleString()}</p>
+              <p className="text-3xl font-bold text-foreground tabular-nums">KSH {pending.toLocaleString()}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-chart-4/10 flex items-center justify-center">
               <DollarSign className="w-6 h-6 text-chart-4" />
@@ -123,9 +127,9 @@ export default function WorkerEarningsPage() {
             <tbody>
               {payments.map((p) => (
                 <tr key={p.id} className="border-b border-border last:border-0">
-                  <td className="p-4 text-foreground">{(p as any).jobs?.title || "—"}</td>
-                  <td className="p-4 text-foreground tabular-nums">${Number(p.amount).toLocaleString()}</td>
-                  <td className="p-4 text-muted-foreground tabular-nums">${Number(p.commission || 0).toLocaleString()}</td>
+                  <td className="p-4 text-foreground">{(p as any).jobs?.title || "-"}</td>
+                  <td className="p-4 text-foreground tabular-nums">KSH {Number(p.amount).toLocaleString()}</td>
+                  <td className="p-4 text-muted-foreground tabular-nums">KSH {Number(p.commission || 0).toLocaleString()}</td>
                   <td className="p-4">
                     <span className={`px-2 py-0.5 rounded-full text-xs capitalize ${
                       p.status === "completed" ? "bg-green-500/10 text-green-500" :
@@ -133,7 +137,7 @@ export default function WorkerEarningsPage() {
                       "bg-destructive/10 text-destructive"
                     }`}>{p.status}</span>
                   </td>
-                  <td className="p-4 text-muted-foreground">{new Date(p.created_at).toLocaleDateString()}</td>
+                  <td className="p-4 text-muted-foreground text-xs">{new Date(p.created_at).toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>
