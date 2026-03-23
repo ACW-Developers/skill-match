@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Skeleton } from "@/components/ui/skeleton";
 import { CalendarDays, Star, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -63,12 +62,10 @@ export default function CustomerBookingsPage() {
 
   useEffect(() => { loadData(); }, [user]);
 
-  // Handle payment return
   useEffect(() => {
     const paymentStatus = searchParams.get("payment");
     const paymentId = searchParams.get("payment_id");
     if (paymentStatus === "success" && paymentId) {
-      // Verify payment
       (async () => {
         const { data: { session } } = await supabase.auth.getSession();
         await supabase.functions.invoke("verify-payment", {
@@ -81,7 +78,6 @@ export default function CustomerBookingsPage() {
     }
   }, [searchParams]);
 
-  // Show pay popup for completed jobs without payment
   useEffect(() => {
     if (!loading && jobs.length > 0) {
       const unpaid = jobs.find(j => j.status === "completed" && !j.paymentStatus);
@@ -118,7 +114,13 @@ export default function CustomerBookingsPage() {
     setSubmitting(false); loadData();
   };
 
-  if (loading) return <div className="space-y-6"><Skeleton className="h-8 w-48" /><Skeleton className="h-96 rounded-xl" /></div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -149,7 +151,7 @@ export default function CustomerBookingsPage() {
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Worker: {job.workerName} · {job.budget ? `$${job.budget}` : "Open"} · {new Date(job.created_at).toLocaleDateString()}
+                    Worker: {job.workerName} - KSH {job.budget ? job.budget.toLocaleString() : "Open"} - {new Date(job.created_at).toLocaleString()}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -179,7 +181,6 @@ export default function CustomerBookingsPage() {
         </div>
       )}
 
-      {/* Payment Prompt Dialog */}
       <Dialog open={!!payDialog} onOpenChange={(open) => !open && setPayDialog(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>Payment Required</DialogTitle></DialogHeader>
@@ -189,7 +190,7 @@ export default function CustomerBookingsPage() {
             </p>
             <div className="p-4 rounded-lg bg-muted/50 flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Amount Due</span>
-              <span className="text-2xl font-bold text-foreground">${payDialog?.budget || 50}</span>
+              <span className="text-2xl font-bold text-foreground">KSH {payDialog?.budget || 50}</span>
             </div>
             <p className="text-xs text-muted-foreground">A platform commission will be deducted. The worker receives the net amount.</p>
           </div>
@@ -202,7 +203,6 @@ export default function CustomerBookingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Review Dialog */}
       <Dialog open={!!reviewDialog} onOpenChange={(open) => !open && setReviewDialog(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>Rate Worker</DialogTitle></DialogHeader>

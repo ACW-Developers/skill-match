@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 export default function SettingsPage() {
@@ -34,12 +33,10 @@ export default function SettingsPage() {
           if (s.key === "commission_rate") setCommissionRate(s.value);
         });
 
-        // Load commission data
         const { data: payments } = await supabase.from("payments").select("commission, created_at").eq("status", "completed");
         const total = (payments || []).reduce((s, p) => s + Number(p.commission || 0), 0);
         setTotalCommission(total);
 
-        // Monthly commission chart
         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         const monthlyComm: Record<string, number> = {};
         for (let i = 0; i < 6; i++) {
@@ -77,9 +74,8 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6 max-w-3xl">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-48 rounded-xl" />
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -103,7 +99,7 @@ export default function SettingsPage() {
             </div>
             <div className="space-y-2">
               <Label>Phone</Label>
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} className="bg-muted/50 max-w-sm" placeholder="+1 234 567 890" />
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} className="bg-muted/50 max-w-sm" placeholder="+254 712 345 678" />
             </div>
             <Button size="sm" onClick={saveProfile} disabled={saving}>
               {saving ? "Saving..." : "Save Profile"}
@@ -139,7 +135,7 @@ export default function SettingsPage() {
                   <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                     <DollarSign className="w-5 h-5 text-primary" /> Commission Earned
                   </h3>
-                  <p className="text-2xl font-bold text-primary">${totalCommission.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-primary">KSH {totalCommission.toLocaleString()}</p>
                 </div>
                 {commissionData.some(d => d.amount > 0) ? (
                   <ResponsiveContainer width="100%" height={200}>
@@ -147,7 +143,7 @@ export default function SettingsPage() {
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 20%)" />
                       <XAxis dataKey="month" stroke="hsl(220, 10%, 46%)" fontSize={12} />
                       <YAxis stroke="hsl(220, 10%, 46%)" fontSize={12} />
-                      <Tooltip contentStyle={{ backgroundColor: "hsl(222, 28%, 12%)", border: "1px solid hsl(222, 20%, 20%)", borderRadius: "8px", color: "hsl(220, 14%, 90%)" }} />
+                      <Tooltip contentStyle={{ backgroundColor: "hsl(222, 28%, 12%)", border: "1px solid hsl(222, 20%, 20%)", borderRadius: "8px", color: "hsl(220, 14%, 90%)" }} formatter={(value: any) => [`KSH ${Number(value).toLocaleString()}`, "Commission"]} />
                       <Bar dataKey="amount" fill="hsl(22, 93%, 49%)" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -165,7 +161,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                     <span className="text-sm text-muted-foreground">Total Earned</span>
-                    <span className="text-lg font-bold text-primary">${totalCommission.toLocaleString()}</span>
+                    <span className="text-lg font-bold text-primary">KSH {totalCommission.toLocaleString()}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">Commission is automatically deducted from each payment. Workers receive the remaining amount.</p>
                 </div>

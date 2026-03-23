@@ -6,9 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Briefcase, Plus, MapPin, DollarSign, Clock, Users, Check, X } from "lucide-react";
+import { Briefcase, Plus, MapPin, Clock, Users, Check, X, CalendarDays } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -26,6 +25,7 @@ export default function CustomerPostJobPage() {
   const [address, setAddress] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [isInstant, setIsInstant] = useState(false);
+  const [deadline, setDeadline] = useState("");
   const [viewAppsJobId, setViewAppsJobId] = useState<string | null>(null);
   const [applications, setApplications] = useState<any[]>([]);
   const [loadingApps, setLoadingApps] = useState(false);
@@ -65,9 +65,9 @@ export default function CustomerPostJobPage() {
     } else {
       toast({ title: "Job posted!" });
       await supabase.from("activity_logs").insert({
-        user_id: user.id, action: "Job Posted", detail: `Posted "${title.trim()}"`, entity_type: "job",
+        user_id: user.id, action: "Job Posted", detail: `Posted "${title.trim()}"${deadline ? ` - Deadline: ${deadline}` : ""}`, entity_type: "job",
       });
-      setTitle(""); setDescription(""); setBudget(""); setAddress(""); setCategoryId(""); setIsInstant(false); setShowCreate(false);
+      setTitle(""); setDescription(""); setBudget(""); setAddress(""); setCategoryId(""); setIsInstant(false); setDeadline(""); setShowCreate(false);
     }
     setCreating(false); loadData();
   };
@@ -75,7 +75,7 @@ export default function CustomerPostJobPage() {
   const viewApplications = async (jobId: string) => {
     setViewAppsJobId(jobId);
     setLoadingApps(true);
-    const { data } = await supabase.from("job_applications").select("*, profiles:worker_id(name, email)").eq("job_id", jobId).order("created_at", { ascending: false });
+    const { data } = await supabase.from("job_applications").select("*, profiles:worker_id(name, email, phone)").eq("job_id", jobId).order("created_at", { ascending: false });
     setApplications(data || []);
     setLoadingApps(false);
   };
@@ -85,7 +85,6 @@ export default function CustomerPostJobPage() {
     if (status === "accepted") {
       await supabase.from("jobs").update({ worker_id: workerId, status: "accepted" }).eq("id", jobId);
       await supabase.from("job_applications").update({ status: "rejected" }).eq("job_id", jobId).neq("id", appId);
-      // Log for admin & worker notification
       await supabase.from("activity_logs").insert([
         { user_id: user!.id, action: "Worker Selected", detail: `Customer selected a worker for job`, entity_type: "job", entity_id: jobId },
       ]);
@@ -96,7 +95,13 @@ export default function CustomerPostJobPage() {
     viewApplications(jobId); loadData();
   };
 
-  if (loading) return <div className="space-y-6"><Skeleton className="h-8 w-48" /><Skeleton className="h-96 rounded-xl" /></div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   const activeJobs = myJobs.filter(j => ["pending", "accepted", "in_progress"].includes(j.status));
   const pastJobs = myJobs.filter(j => ["completed", "cancelled"].includes(j.status));
@@ -135,8 +140,8 @@ export default function CustomerPostJobPage() {
                     {job.description && <p className="text-sm text-muted-foreground">{job.description}</p>}
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       {job.address && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.address}</span>}
-                      <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> {job.budget ? `$${job.budget}` : "Open"}</span>
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(job.created_at).toLocaleDateString()}</span>
+                      <span className="flex items-center gap-1">KSH {job.budget ? job.budget.toLocaleString() : "Open"}</span>
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(job.created_at).toLocaleString()}</span>
                     </div>
                   </div>
                   {job.status === "pending" && (
@@ -163,7 +168,7 @@ export default function CustomerPostJobPage() {
             <div className="space-y-2"><Label>Job Title *</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Fix kitchen faucet" className="bg-muted/50" /></div>
             <div className="space-y-2"><Label>Description</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the work needed..." className="bg-muted/50" /></div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Budget ($)</Label><Input type="number" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="100" className="bg-muted/50" /></div>
+              <div className="space-y-2"><Label>Budget (KSH)</Label><Input type="number" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="5000" className="bg-muted/50" /></div>
               <div className="space-y-2">
                 <Label>Category</Label>
                 <Select value={categoryId} onValueChange={setCategoryId}>
@@ -173,6 +178,10 @@ export default function CustomerPostJobPage() {
               </div>
             </div>
             <div className="space-y-2"><Label>Address / Location</Label><Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="123 Main St" className="bg-muted/50" /></div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2"><CalendarDays className="w-4 h-4" /> Timeline / Deadline</Label>
+              <Input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="bg-muted/50" />
+            </div>
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={isInstant} onChange={(e) => setIsInstant(e.target.checked)} className="rounded border-border" />
               <span className="text-sm text-foreground">Instant service (urgent request)</span>
@@ -189,7 +198,9 @@ export default function CustomerPostJobPage() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader><DialogTitle>Job Applications</DialogTitle></DialogHeader>
           {loadingApps ? (
-            <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+            <div className="flex items-center justify-center py-8">
+              <div className="w-6 h-6 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
           ) : applications.length > 0 ? (
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {applications.map((app) => (
@@ -198,6 +209,7 @@ export default function CustomerPostJobPage() {
                     <div>
                       <p className="font-medium text-foreground text-sm">{(app as any).profiles?.name || "Worker"}</p>
                       <p className="text-xs text-muted-foreground">{(app as any).profiles?.email}</p>
+                      {(app as any).profiles?.phone && <p className="text-xs text-muted-foreground">Tel: {(app as any).profiles?.phone}</p>}
                     </div>
                     {app.status === "pending" ? (
                       <div className="flex gap-1">
@@ -209,7 +221,8 @@ export default function CustomerPostJobPage() {
                     )}
                   </div>
                   {app.cover_note && <p className="text-xs text-muted-foreground">{app.cover_note}</p>}
-                  {app.proposed_rate && <p className="text-xs text-foreground">Proposed: ${app.proposed_rate}</p>}
+                  {app.proposed_rate && <p className="text-xs text-foreground">Proposed: KSH {app.proposed_rate}</p>}
+                  <p className="text-xs text-muted-foreground">Applied: {new Date(app.created_at).toLocaleString()}</p>
                 </div>
               ))}
             </div>

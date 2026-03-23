@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const DEFAULT_CATEGORY_IMAGES: Record<string, string> = {
   "Electrician": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&h=300&fit=crop",
@@ -19,10 +20,39 @@ const DEFAULT_CATEGORY_IMAGES: Record<string, string> = {
 
 export default function CustomerDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [categories, setCategories] = useState<any[]>([]);
   const [nearbyWorkers, setNearbyWorkers] = useState<any[]>([]);
   const [stats, setStats] = useState({ bookings: 0, spent: 0, avgRating: 0 });
   const [loading, setLoading] = useState(true);
+
+  const hireWorker = async (worker: any) => {
+    if (!user) return;
+    // Create a job for the hired worker
+    const { data: job, error } = await supabase.from("jobs").insert({
+      title: `Hire: ${worker.name}`,
+      description: `Customer hired ${worker.name} directly`,
+      customer_id: user.id,
+      worker_id: worker.user_id,
+      status: "accepted",
+      is_instant: true,
+    }).select().single();
+
+    if (error) {
+      toast({ title: "Failed to hire", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    // Log activity
+    await supabase.from("activity_logs").insert({
+      user_id: user.id, action: "Worker Selected",
+      detail: `Customer hired ${worker.name} directly`, entity_type: "job", entity_id: job.id,
+    });
+
+    toast({ title: "Worker hired!", description: `${worker.name} has been notified.` });
+    navigate("/dashboard/bookings");
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -63,6 +93,7 @@ export default function CustomerDashboard() {
       setNearbyWorkers((onlineWorkers || []).map(w => ({
         ...w,
         name: (w as any).profiles?.name || "Worker",
+        avatar_url: (w as any).profiles?.avatar_url || null,
         skill: (w.skills || []).map((s: string) => skillMap[s] || "").filter(Boolean).join(", ") || "General",
         rating: ratingMap[w.user_id] ? Math.round(ratingMap[w.user_id].sum / ratingMap[w.user_id].count * 10) / 10 : 0,
         available: w.is_online,
@@ -85,12 +116,8 @@ export default function CustomerDashboard() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-14 max-w-2xl rounded-xl" />
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
-        </div>
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -157,9 +184,13 @@ export default function CustomerDashboard() {
             {nearbyWorkers.map((worker) => (
               <div key={worker.id} className="stat-card space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold">
-                    {worker.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
-                  </div>
+                  {worker.avatar_url ? (
+                    <img src={worker.avatar_url} alt={worker.name} className="w-11 h-11 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-11 h-11 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold">
+                      {worker.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
                   <div>
                     <p className="text-sm font-medium text-foreground">{worker.name}</p>
                     <p className="text-xs text-muted-foreground">{worker.skill}</p>
@@ -173,7 +204,7 @@ export default function CustomerDashboard() {
                     {worker.available ? "Online" : "Offline"}
                   </span>
                 </div>
-                <Button size="sm" className="w-full active:scale-[0.97] transition-transform">Hire Now</Button>
+                <Button size="sm" className="w-full active:scale-[0.97] transition-transform" onClick={() => hireWorker(worker)}>Hire Now</Button>
               </div>
             ))}
           </div>
@@ -188,7 +219,7 @@ export default function CustomerDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-fade-in" style={{ animationDelay: "400ms" }}>
         {[
           { label: "My Bookings", value: String(stats.bookings), icon: Briefcase, color: "text-primary", bg: "bg-primary/10" },
-          { label: "Total Spent", value: `$${stats.spent.toLocaleString()}`, icon: CreditCard, color: "text-chart-2", bg: "bg-chart-2/10" },
+          { label: "Total Spent", value: `KSH ${stats.spent.toLocaleString()}`, icon: CreditCard, color: "text-chart-2", bg: "bg-chart-2/10" },
           { label: "Avg. Rating Given", value: stats.avgRating > 0 ? String(stats.avgRating) : "N/A", icon: Star, color: "text-chart-4", bg: "bg-chart-4/10" },
         ].map((s) => (
           <div key={s.label} className="stat-card">

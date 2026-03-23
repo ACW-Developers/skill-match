@@ -7,14 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Upload, FileText, Trash2, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Upload, FileText, Trash2, CheckCircle, Clock, XCircle, Camera } from "lucide-react";
 
 export default function WorkerProfilePage() {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const [profile, setProfile] = useState<any>(null);
   const [bio, setBio] = useState("");
@@ -25,15 +26,18 @@ export default function WorkerProfilePage() {
   const [categories, setCategories] = useState<any[]>([]);
   const [certs, setCerts] = useState<any[]>([]);
   const [certName, setCertName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
     async function load() {
-      const [wpRes, catsRes] = await Promise.all([
+      const [wpRes, catsRes, profileRes] = await Promise.all([
         supabase.from("worker_profiles").select("*").eq("user_id", user!.id).single(),
         supabase.from("service_categories").select("*").order("name"),
+        supabase.from("profiles").select("avatar_url").eq("id", user!.id).single(),
       ]);
       const wp = wpRes.data;
+      setAvatarUrl(profileRes.data?.avatar_url || null);
       if (wp) {
         setProfile(wp);
         setBio(wp.bio || "");
@@ -52,7 +56,6 @@ export default function WorkerProfilePage() {
     }
     load();
 
-    // Realtime for verification status updates
     const channel = supabase.channel("worker-profile-rt")
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "worker_profiles", filter: `user_id=eq.${user.id}` }, (payload) => {
         setProfile((prev: any) => prev ? { ...prev, ...payload.new } : prev);
@@ -65,10 +68,27 @@ export default function WorkerProfilePage() {
     setSelectedSkills((prev) => prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]);
   };
 
+  const uploadAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploadingAvatar(true);
+    const path = `${user.id}/avatar_${Date.now()}.${file.name.split('.').pop()}`;
+    const { error: uploadError } = await supabase.storage.from("certifications").upload(path, file);
+    if (uploadError) {
+      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
+      setUploadingAvatar(false); return;
+    }
+    const { data: urlData } = supabase.storage.from("certifications").getPublicUrl(path);
+    await supabase.from("profiles").update({ avatar_url: urlData.publicUrl }).eq("id", user.id);
+    setAvatarUrl(urlData.publicUrl);
+    await refreshProfile();
+    toast({ title: "Profile photo updated" });
+    setUploadingAvatar(false);
+  };
+
   const saveProfile = async () => {
     if (!profile) return;
     setSaving(true);
-    // Always reset to pending on profile update to trigger re-verification
     await supabase.from("worker_profiles").update({
       bio, hourly_rate: hourlyRate ? Number(hourlyRate) : null,
       years_experience: yearsExperience ? Number(yearsExperience) : 0,
@@ -126,6 +146,8 @@ export default function WorkerProfilePage() {
   };
   const st = statusConfig[profile?.verification_status] || statusConfig.pending;
 
+  const initials = user?.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "W";
+
   return (
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-center justify-between">
@@ -138,6 +160,28 @@ export default function WorkerProfilePage() {
         </div>
       </div>
 
+      {/* Profile Photo */}
+      <div className="stat-card animate-fade-in flex items-center gap-6">
+        <div className="relative">
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="Profile" className="w-20 h-20 rounded-full object-cover" />
+          ) : (
+            <div className="w-20 h-20 rounded-full bg-primary/10 text-primary flex items-center justify-center text-2xl font-bold">
+              {initials}
+            </div>
+          )}
+          <label className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:opacity-80">
+            <Camera className="w-4 h-4" />
+            <input type="file" className="hidden" accept="image/*" onChange={uploadAvatar} />
+          </label>
+        </div>
+        <div>
+          <p className="font-medium text-foreground">{user?.name}</p>
+          <p className="text-sm text-muted-foreground">{user?.email}</p>
+          {uploadingAvatar && <p className="text-xs text-primary mt-1">Uploading...</p>}
+        </div>
+      </div>
+
       <div className="stat-card animate-fade-in space-y-4">
         <h3 className="text-lg font-semibold text-foreground">About You</h3>
         <div className="space-y-2">
@@ -145,9 +189,9 @@ export default function WorkerProfilePage() {
           <Textarea value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Tell customers about your experience..." className="bg-muted/50 min-h-[100px]" />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="space-y-2"><Label>Hourly Rate ($)</Label><Input type="number" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} placeholder="50" className="bg-muted/50" /></div>
+          <div className="space-y-2"><Label>Hourly Rate (KSH)</Label><Input type="number" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} placeholder="500" className="bg-muted/50" /></div>
           <div className="space-y-2"><Label>Years of Experience</Label><Input type="number" value={yearsExperience} onChange={(e) => setYearsExperience(e.target.value)} placeholder="5" className="bg-muted/50" /></div>
-          <div className="space-y-2"><Label>Service Area</Label><Input value={serviceArea} onChange={(e) => setServiceArea(e.target.value)} placeholder="e.g. Downtown" className="bg-muted/50" /></div>
+          <div className="space-y-2"><Label>Service Area</Label><Input value={serviceArea} onChange={(e) => setServiceArea(e.target.value)} placeholder="e.g. Nairobi CBD" className="bg-muted/50" /></div>
         </div>
       </div>
 
@@ -180,7 +224,7 @@ export default function WorkerProfilePage() {
               <div key={cert.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                 <div className="flex items-center gap-3">
                   <FileText className="w-5 h-5 text-primary" />
-                  <div><p className="text-sm font-medium text-foreground">{cert.name}</p><p className="text-xs text-muted-foreground">{new Date(cert.created_at).toLocaleDateString()}</p></div>
+                  <div><p className="text-sm font-medium text-foreground">{cert.name}</p><p className="text-xs text-muted-foreground">{new Date(cert.created_at).toLocaleString()}</p></div>
                 </div>
                 <div className="flex items-center gap-2">
                   {cert.file_url && <a href={cert.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View</a>}

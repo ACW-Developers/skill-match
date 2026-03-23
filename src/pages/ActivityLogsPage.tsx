@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Activity, User, Shield, Briefcase, Search, Filter } from "lucide-react";
+import { Activity, User, Shield, Briefcase, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ const iconMap: Record<string, any> = {
   "New Booking": Briefcase, "Job Completed": Briefcase, "Payment Processed": Activity,
   "Job Posted": Briefcase, "Job Application": Briefcase, "Role Changed": Shield,
   "User Deactivated": User, "User Activated": User, "User Deleted": User,
+  "User Login": User, "Profile Submitted": User, "Worker Selected": Briefcase,
 };
 
 const colorMap: Record<string, string> = {
@@ -21,25 +22,30 @@ const colorMap: Record<string, string> = {
   "Job Posted": "text-primary", "Job Application": "text-chart-3",
   "Role Changed": "text-chart-5", "User Deactivated": "text-destructive",
   "User Activated": "text-green-500", "User Deleted": "text-destructive",
+  "User Login": "text-chart-3", "Profile Submitted": "text-chart-4",
+  "Worker Selected": "text-primary",
 };
+
+const PAGE_SIZE = 20;
 
 export default function ActivityLogsPage() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("all");
   const [chartData, setChartData] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
 
   async function load() {
     const { data } = await supabase
       .from("activity_logs")
       .select("*, profiles:user_id(name)")
       .order("created_at", { ascending: false })
-      .limit(200);
+      .limit(500);
     const allLogs = data || [];
     setLogs(allLogs);
 
-    // Build chart: actions per day (last 7 days)
     const days: Record<string, number> = {};
     for (let i = 6; i >= 0; i--) {
       const d = new Date(); d.setDate(d.getDate() - i);
@@ -62,20 +68,37 @@ export default function ActivityLogsPage() {
   }, []);
 
   const actions = [...new Set(logs.map(l => l.action))];
+
   const filtered = logs.filter(l => {
     if (actionFilter !== "all" && l.action !== actionFilter) return false;
+    if (dateFilter !== "all") {
+      const logDate = new Date(l.created_at);
+      const now = new Date();
+      if (dateFilter === "today" && logDate.toDateString() !== now.toDateString()) return false;
+      if (dateFilter === "week") {
+        const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+        if (logDate < weekAgo) return false;
+      }
+      if (dateFilter === "month") {
+        const monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth() - 1);
+        if (logDate < monthAgo) return false;
+      }
+    }
     if (search && !l.action.toLowerCase().includes(search.toLowerCase()) && !(l as any).profiles?.name?.toLowerCase().includes(search.toLowerCase()) && !l.detail?.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 
-  function timeAgo(date: string) {
-    const diff = Date.now() - new Date(date).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "Just now";
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    return `${Math.floor(hrs / 24)}d ago`;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // Reset page when filters change
+  useEffect(() => { setPage(1); }, [search, actionFilter, dateFilter]);
+
+  function formatTimestamp(date: string) {
+    return new Date(date).toLocaleString("en-US", {
+      month: "short", day: "numeric", year: "numeric",
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
+    });
   }
 
   if (loading) {
@@ -95,7 +118,6 @@ export default function ActivityLogsPage() {
         <p className="text-muted-foreground text-sm">All platform actions, visits, and events</p>
       </div>
 
-      {/* Activity chart */}
       <div className="stat-card animate-fade-in">
         <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
           <Activity className="w-5 h-5 text-primary" /> Activity (Last 7 Days)
@@ -124,6 +146,15 @@ export default function ActivityLogsPage() {
             {actions.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={dateFilter} onValueChange={setDateFilter}>
+          <SelectTrigger className="w-40 bg-card"><SelectValue placeholder="Date range" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Time</SelectItem>
+            <SelectItem value="today">Today</SelectItem>
+            <SelectItem value="week">Last 7 Days</SelectItem>
+            <SelectItem value="month">Last 30 Days</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Log entries */}
@@ -135,11 +166,11 @@ export default function ActivityLogsPage() {
                 <th className="text-left p-4 text-muted-foreground font-medium">Action</th>
                 <th className="text-left p-4 text-muted-foreground font-medium">User</th>
                 <th className="text-left p-4 text-muted-foreground font-medium">Details</th>
-                <th className="text-left p-4 text-muted-foreground font-medium">Time</th>
+                <th className="text-left p-4 text-muted-foreground font-medium">Timestamp</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.length > 0 ? filtered.map((log) => {
+              {paginated.length > 0 ? paginated.map((log) => {
                 const Icon = iconMap[log.action] || Activity;
                 const color = colorMap[log.action] || "text-muted-foreground";
                 return (
@@ -151,9 +182,9 @@ export default function ActivityLogsPage() {
                       </div>
                     </td>
                     <td className="p-4 text-muted-foreground">{(log as any).profiles?.name || "System"}</td>
-                    <td className="p-4 text-muted-foreground max-w-xs truncate">{log.detail || "—"}</td>
-                    <td className="p-4 text-muted-foreground whitespace-nowrap">
-                      <span title={new Date(log.created_at).toLocaleString()}>{timeAgo(log.created_at)}</span>
+                    <td className="p-4 text-muted-foreground max-w-xs truncate">{log.detail || "-"}</td>
+                    <td className="p-4 text-muted-foreground whitespace-nowrap text-xs">
+                      {formatTimestamp(log.created_at)}
                     </td>
                   </tr>
                 );
@@ -164,6 +195,24 @@ export default function ActivityLogsPage() {
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Showing {(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
+              <ChevronLeft className="w-4 h-4 mr-1" /> Prev
+            </Button>
+            <span className="text-sm text-foreground font-medium px-2">{page} / {totalPages}</span>
+            <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>
+              Next <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

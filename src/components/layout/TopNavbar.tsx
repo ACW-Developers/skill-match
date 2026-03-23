@@ -24,12 +24,13 @@ export function TopNavbar() {
     navigate("/auth");
   };
 
+  const avatarUrl = user?.avatar_url;
   const initials = user?.name
     ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
 
   return (
-    <header className="h-16 border-b border-border bg-card flex items-center justify-between px-4 lg:px-6">
+    <header className="h-16 border-b border-border bg-card flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30">
       <div className="flex items-center gap-3">
         <SidebarTrigger className="lg:hidden" />
         <span className="text-sm text-muted-foreground">
@@ -47,9 +48,13 @@ export function TopNavbar() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-3 ml-2 pl-3 border-l border-border cursor-pointer hover:opacity-80 transition-opacity">
-              <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
-                {initials}
-              </div>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={user?.name} className="w-9 h-9 rounded-full object-cover" />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
+                  {initials}
+                </div>
+              )}
               <div className="hidden sm:block text-left">
                 <p className="text-sm font-medium text-foreground leading-none">{user?.name}</p>
                 <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>

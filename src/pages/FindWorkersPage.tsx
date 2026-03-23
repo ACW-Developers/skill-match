@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import { Search, Star, MapPin, DollarSign, CheckCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, Star, MapPin, CheckCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 export default function FindWorkersPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [workers, setWorkers] = useState<any[]>([]);
   const [search, setSearch] = useState("");
@@ -46,6 +50,7 @@ export default function FindWorkersPage() {
         ...w,
         name: (w as any).profiles?.name || "Worker",
         email: (w as any).profiles?.email || "",
+        avatar_url: (w as any).profiles?.avatar_url || null,
         skillNames: (w.skills || []).map((s: string) => catMap[s] || "").filter(Boolean),
         rating: ratingMap[w.user_id] ? Math.round(ratingMap[w.user_id].sum / ratingMap[w.user_id].count * 10) / 10 : 0,
         reviewCount: ratingMap[w.user_id]?.count || 0,
@@ -55,6 +60,32 @@ export default function FindWorkersPage() {
     load();
   }, []);
 
+  const hireWorker = async (worker: any) => {
+    if (!user) return;
+    const { data: job, error } = await supabase.from("jobs").insert({
+      title: `Hire: ${worker.name}`,
+      description: `Customer hired ${worker.name} directly`,
+      customer_id: user.id,
+      worker_id: worker.user_id,
+      status: "accepted",
+      is_instant: true,
+    }).select().single();
+
+    if (error) {
+      toast({ title: "Failed to hire", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    await supabase.from("activity_logs").insert({
+      user_id: user.id, action: "Worker Selected",
+      detail: `Customer hired ${worker.name} directly`, entity_type: "job", entity_id: job.id,
+    });
+
+    toast({ title: "Worker hired!", description: `${worker.name} has been notified.` });
+    setSelectedWorker(null);
+    navigate("/dashboard/bookings");
+  };
+
   const openWorkerProfile = async (worker: any) => {
     setSelectedWorker(worker);
     const [certsRes, reviewsRes] = await Promise.all([
@@ -62,7 +93,6 @@ export default function FindWorkersPage() {
       supabase.from("reviews").select("*, jobs:job_id(title)").eq("reviewee_id", worker.user_id).order("created_at", { ascending: false }).limit(10),
     ]);
 
-    // Get reviewer names
     const reviewerIds = [...new Set((reviewsRes.data || []).map(r => r.reviewer_id))];
     const { data: profiles } = reviewerIds.length > 0
       ? await supabase.from("profiles").select("id, name").in("id", reviewerIds)
@@ -80,7 +110,11 @@ export default function FindWorkersPage() {
   );
 
   if (loading) {
-    return <div className="space-y-6"><Skeleton className="h-8 w-48" /><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)}</div></div>;
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return (
@@ -99,9 +133,13 @@ export default function FindWorkersPage() {
           {filtered.map((w, i) => (
             <div key={w.id} className="stat-card space-y-3 cursor-pointer hover:border-primary/40 transition-colors animate-fade-in" style={{ animationDelay: `${i * 60}ms` }} onClick={() => openWorkerProfile(w)}>
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold">
-                  {w.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
-                </div>
+                {w.avatar_url ? (
+                  <img src={w.avatar_url} alt={w.name} className="w-12 h-12 rounded-full object-cover" />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold">
+                    {w.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
+                  </div>
+                )}
                 <div>
                   <div className="flex items-center gap-1.5">
                     <p className="font-medium text-foreground">{w.name}</p>
@@ -114,7 +152,7 @@ export default function FindWorkersPage() {
                 <span className="flex items-center gap-1 text-chart-4">
                   <Star className="w-3 h-3 fill-current" /> {w.rating > 0 ? `${w.rating} (${w.reviewCount})` : "New"}
                 </span>
-                {w.hourly_rate && <span className="flex items-center gap-1 text-foreground"><DollarSign className="w-3 h-3" /> ${w.hourly_rate}/hr</span>}
+                {w.hourly_rate && <span className="text-foreground">KSH {w.hourly_rate}/hr</span>}
                 <span className={`px-2 py-0.5 rounded-full ${w.is_online ? "bg-green-500/10 text-green-500" : "bg-muted text-muted-foreground"}`}>
                   {w.is_online ? "Online" : "Offline"}
                 </span>
@@ -139,9 +177,13 @@ export default function FindWorkersPage() {
             <>
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold">
-                    {selectedWorker.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
-                  </div>
+                  {selectedWorker.avatar_url ? (
+                    <img src={selectedWorker.avatar_url} alt={selectedWorker.name} className="w-12 h-12 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold">
+                      {selectedWorker.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
                   <div>
                     <p className="flex items-center gap-1.5">{selectedWorker.name} <CheckCircle className="w-4 h-4 text-green-500" /></p>
                     <p className="text-sm text-muted-foreground font-normal">{selectedWorker.skillNames.join(", ")}</p>
@@ -151,7 +193,7 @@ export default function FindWorkersPage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-3">
                   <div className="text-center p-3 rounded-lg bg-muted/50">
-                    <p className="text-lg font-bold text-foreground">{selectedWorker.rating > 0 ? selectedWorker.rating : "—"}</p>
+                    <p className="text-lg font-bold text-foreground">{selectedWorker.rating > 0 ? selectedWorker.rating : "-"}</p>
                     <p className="text-xs text-muted-foreground">Rating</p>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-muted/50">
@@ -159,7 +201,7 @@ export default function FindWorkersPage() {
                     <p className="text-xs text-muted-foreground">Years Exp.</p>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-muted/50">
-                    <p className="text-lg font-bold text-foreground">{selectedWorker.hourly_rate ? `$${selectedWorker.hourly_rate}` : "—"}</p>
+                    <p className="text-lg font-bold text-foreground">{selectedWorker.hourly_rate ? `KSH ${selectedWorker.hourly_rate}` : "-"}</p>
                     <p className="text-xs text-muted-foreground">Per Hour</p>
                   </div>
                 </div>
@@ -202,6 +244,7 @@ export default function FindWorkersPage() {
                     </div>
                   </div>
                 )}
+                <Button className="w-full" onClick={() => hireWorker(selectedWorker)}>Hire Now</Button>
               </div>
             </>
           )}
