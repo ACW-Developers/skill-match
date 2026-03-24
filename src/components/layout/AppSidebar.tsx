@@ -56,7 +56,7 @@ export function AppSidebar() {
         <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0">
           <img src={logo} alt="FundiPlug" className="w-full h-full object-cover" />
         </div>
-        {!collapsed && <span className="font-bold text-sidebar-accent-foreground text-lg">FundiPlug</span>}
+        {!collapsed && <span className="font-bold text-primary text-lg">FundiPlug</span>}
       </div>
       <SidebarContent className="scrollbar-thin py-2">
         <SidebarGroup>
