@@ -56,7 +56,7 @@ export function AppSidebar() {
         <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0">
           <img src={logo} alt="FundiPlug" className="w-full h-full object-cover" />
         </div>
-        {!collapsed && <span className="font-bold text-sidebar-accent-foreground text-lg">FundiPlug</span>}
+        {!collapsed && <span className="font-bold text-primary text-lg">FundiPlug</span>}
       </div>
       <SidebarContent className="scrollbar-thin py-2">
         <SidebarGroup>
@@ -72,10 +72,10 @@ export function AppSidebar() {
                         end={item.url === "/dashboard"}
                         className={`rounded-lg border transition-all duration-150 text-[13px] font-medium ${
                           active
-                            ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                            : "border-sidebar-border hover:bg-primary/10 hover:text-primary hover:border-primary/40"
+                            ? "bg-primary/10 text-primary border-primary/40 shadow-sm"
+                            : "text-sidebar-foreground border-sidebar-border hover:bg-primary/10 hover:text-primary hover:border-primary/40"
                         }`}
-                        activeClassName="bg-primary text-primary-foreground border-primary"
+                        activeClassName="bg-primary/10 text-primary border-primary/40"
                       >
                         <item.icon className="w-4 h-4 shrink-0" />
                         {!collapsed && <span>{item.title}</span>}
