@@ -66,18 +66,18 @@ export function AppSidebar() {
                 const active = location.pathname === item.url;
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={active} className="h-10">
+                    <SidebarMenuButton asChild isActive={active} className={`h-10 ${active ? "[&]:text-primary [&]:bg-primary/10" : ""}`}>
                       <NavLink
                         to={item.url}
                         end={item.url === "/dashboard"}
                         className={`rounded-lg border transition-all duration-150 text-[13px] font-medium ${
                           active
-                            ? "bg-primary/10 text-primary border-primary/40 shadow-sm"
+                            ? "!text-primary bg-primary/10 border-primary/40 shadow-sm"
                             : "text-sidebar-foreground border-sidebar-border hover:bg-primary/10 hover:text-primary hover:border-primary/40"
                         }`}
-                        activeClassName="bg-primary/10 text-primary border-primary/40"
+                        activeClassName="!text-primary bg-primary/10 border-primary/40"
                       >
-                        <item.icon className="w-4 h-4 shrink-0" />
+                        <item.icon className={`w-4 h-4 shrink-0 ${active ? "text-primary" : ""}`} />
                         {!collapsed && <span>{item.title}</span>}
                       </NavLink>
                     </SidebarMenuButton>
