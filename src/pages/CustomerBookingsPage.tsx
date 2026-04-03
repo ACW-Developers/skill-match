@@ -177,7 +177,7 @@ export default function CustomerBookingsPage() {
                 </div>
                 <div className="flex gap-2">
                   {job.status === "completed" && (!job.paymentStatus || job.paymentStatus === "pending") && (
-                    <Button size="sm" onClick={() => handlePay(job)} className="active:scale-[0.97]">
+                    <Button size="sm" onClick={() => setPayDialog(job)} className="active:scale-[0.97]">
                       <CreditCard className="w-4 h-4 mr-1" /> Pay Now
                     </Button>
                   )}
