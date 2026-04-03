@@ -202,10 +202,10 @@ export default function CustomerBookingsPage() {
         </div>
       )}
 
-      <Dialog open={!!payDialog} onOpenChange={(open) => !open && setPayDialog(null)}>
+      <Dialog open={!!payDialog} onOpenChange={(open) => { if (!open) { setPayDialog(null); setPaymentMethod(null); setMpesaPhone(""); } }}>
         <DialogContent>
           <DialogHeader><DialogTitle>Payment Required</DialogTitle></DialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
               The service for <strong className="text-foreground">{payDialog?.title}</strong> has been completed by <strong className="text-foreground">{payDialog?.workerName}</strong>.
             </p>
@@ -213,13 +213,58 @@ export default function CustomerBookingsPage() {
               <span className="text-sm text-muted-foreground">Amount Due</span>
               <span className="text-2xl font-bold text-foreground">KSH {payDialog?.budget || 50}</span>
             </div>
+
+            {!paymentMethod ? (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-foreground">Choose payment method:</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setPaymentMethod("stripe")}
+                    className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-border hover:border-primary transition-colors bg-card"
+                  >
+                    <CreditCard className="w-8 h-8 text-primary" />
+                    <span className="text-sm font-medium text-foreground">Card (Stripe)</span>
+                  </button>
+                  <button
+                    onClick={() => setPaymentMethod("mpesa")}
+                    className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-border hover:border-primary transition-colors bg-card"
+                  >
+                    <Smartphone className="w-8 h-8 text-primary" />
+                    <span className="text-sm font-medium text-foreground">M-Pesa</span>
+                  </button>
+                </div>
+              </div>
+            ) : paymentMethod === "mpesa" ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setPaymentMethod(null)} className="text-xs text-muted-foreground hover:text-foreground">← Back</button>
+                  <span className="text-sm font-medium text-foreground">M-Pesa STK Push</span>
+                </div>
+                <Input
+                  placeholder="Phone number e.g. 0712345678"
+                  value={mpesaPhone}
+                  onChange={(e) => setMpesaPhone(e.target.value)}
+                  className="bg-muted/50"
+                />
+                <p className="text-xs text-muted-foreground">You'll receive an STK push on your phone to complete payment.</p>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button onClick={() => setPaymentMethod(null)} className="text-xs text-muted-foreground hover:text-foreground">← Back</button>
+                <span className="text-sm font-medium text-foreground">Pay with Card (Stripe)</span>
+              </div>
+            )}
+
             <p className="text-xs text-muted-foreground">A platform commission will be deducted. The worker receives the net amount.</p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPayDialog(null)}>Later</Button>
-            <Button onClick={() => { setPayDialog(null); handlePay(payDialog); }} disabled={paying}>
-              <CreditCard className="w-4 h-4 mr-2" /> {paying ? "Processing..." : "Pay Now"}
-            </Button>
+            <Button variant="outline" onClick={() => { setPayDialog(null); setPaymentMethod(null); setMpesaPhone(""); }}>Later</Button>
+            {paymentMethod && (
+              <Button onClick={() => handlePay(payDialog, paymentMethod)} disabled={paying}>
+                {paymentMethod === "mpesa" ? <Smartphone className="w-4 h-4 mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}
+                {paying ? "Processing..." : paymentMethod === "mpesa" ? "Send STK Push" : "Pay with Card"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
