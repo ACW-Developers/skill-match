@@ -13,8 +13,65 @@ export default function PaymentsPage() {
   const [payments, setPayments] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [chartData, setChartData] = useState<any[]>([]);
+  const [resetting, setResetting] = useState<string | null>(null);
+  const { toast } = useToast();
   const isAdmin = user?.role === "admin";
   const isWorker = user?.role === "worker";
+
+  const load = async () => {
+    if (!user) return;
+    let query = supabase.from("payments").select("*, jobs:job_id(title)").order("created_at", { ascending: false });
+    if (!isAdmin && isWorker) {
+      query = query.eq("payee_id", user!.id);
+    } else if (!isAdmin) {
+      query = query.eq("payer_id", user!.id);
+    }
+    const { data } = await query;
+
+    const allIds = [...new Set((data || []).flatMap(p => [p.payer_id, p.payee_id]))];
+    const { data: profiles } = allIds.length > 0 ? await supabase.from("profiles").select("id, name").in("id", allIds) : { data: [] };
+    const nameMap: Record<string, string> = {};
+    (profiles || []).forEach(p => { nameMap[p.id] = p.name; });
+
+    const mapped = (data || []).map(p => ({
+      ...p,
+      payerName: nameMap[p.payer_id] || "-",
+      payeeName: nameMap[p.payee_id] || "-",
+      jobTitle: (p as any).jobs?.title || "-",
+    }));
+    setPayments(mapped);
+
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthlyAmounts: Record<string, number> = {};
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(); d.setMonth(d.getMonth() - i);
+      monthlyAmounts[months[d.getMonth()]] = 0;
+    }
+    mapped.filter(p => p.status === "completed").forEach(p => {
+      const m = months[new Date(p.created_at).getMonth()];
+      if (monthlyAmounts[m] !== undefined) monthlyAmounts[m] += Number(p.amount);
+    });
+    setChartData(Object.entries(monthlyAmounts).map(([month, amount]) => ({ month, amount: Math.round(amount) })));
+    setLoading(false);
+  };
+
+  const handleResetPayment = async (paymentId: string) => {
+    setResetting(paymentId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const { error } = await supabase.functions.invoke("admin-manage-user", {
+        body: { action: "reset_payment", paymentId },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      if (error) throw error;
+      toast({ title: "Payment reset", description: "Customer can now retry payment." });
+      load();
+    } catch (err: any) {
+      toast({ title: "Reset failed", description: err.message, variant: "destructive" });
+    } finally {
+      setResetting(null);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
