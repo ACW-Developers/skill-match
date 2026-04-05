@@ -3,7 +3,7 @@ import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, Users, CalendarDays, ClipboardList, MapPin, Star, Briefcase, Search,
-  BarChart3, Activity, Settings, ChevronLeft, Shield, CreditCard, UserCog,
+  BarChart3, Activity, Settings, ChevronLeft, Shield, CreditCard, UserCog, ArrowDownCircle,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
@@ -17,6 +17,7 @@ const adminNav = [
   { title: "Jobs", url: "/dashboard/jobs", icon: Briefcase },
   { title: "Categories", url: "/dashboard/categories", icon: ClipboardList },
   { title: "Payments", url: "/dashboard/payments", icon: CreditCard },
+  { title: "Disbursements", url: "/dashboard/disbursements", icon: ArrowDownCircle },
   { title: "Reports", url: "/dashboard/reports", icon: BarChart3 },
   { title: "Activity Logs", url: "/dashboard/activity", icon: Activity },
   { title: "User Management", url: "/dashboard/user-management", icon: UserCog },

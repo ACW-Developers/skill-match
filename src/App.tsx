@@ -24,6 +24,7 @@ import FindWorkersPage from "@/pages/FindWorkersPage";
 import PaymentsPage from "@/pages/PaymentsPage";
 import AdminJobsPage from "@/pages/AdminJobsPage";
 import AdminCategoriesPage from "@/pages/AdminCategoriesPage";
+import AdminDisbursementsPage from "@/pages/AdminDisbursementsPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="verification" element={<VerificationPage />} />
               <Route path="jobs" element={<AdminJobsPage />} />
               <Route path="categories" element={<AdminCategoriesPage />} />
+              <Route path="disbursements" element={<AdminDisbursementsPage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="activity" element={<ActivityLogsPage />} />
               <Route path="user-management" element={<UserManagementPage />} />
