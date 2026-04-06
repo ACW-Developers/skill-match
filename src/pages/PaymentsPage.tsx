@@ -185,6 +185,7 @@ export default function PaymentsPage() {
           <p className="text-sm text-muted-foreground">Transaction records will appear here</p>
         </div>
       )}
+      <TransactionReceipt open={!!receiptData} onClose={() => setReceiptData(null)} data={receiptData} />
     </div>
   );
 }
