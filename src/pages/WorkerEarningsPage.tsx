@@ -262,7 +262,17 @@ export default function WorkerEarningsPage() {
                     </td>
                     <td className="p-4 text-muted-foreground text-xs">{new Date(w.requested_at).toLocaleString()}</td>
                     <td className="p-4 text-muted-foreground text-xs">{w.processed_at ? new Date(w.processed_at).toLocaleString() : "—"}</td>
-                    <td className="p-4 text-muted-foreground text-xs">{w.admin_notes || "—"}</td>
+                     <td className="p-4 text-muted-foreground text-xs">{w.admin_notes || "—"}</td>
+                     <td className="p-4">
+                       {w.status === "completed" && (
+                         <Button size="sm" variant="ghost" className="gap-1.5 text-xs" onClick={() => setReceiptData({
+                           id: w.id, type: "withdrawal", amount: Number(w.amount), status: w.status,
+                           date: w.processed_at || w.requested_at, workerName: user?.name, adminNotes: w.admin_notes,
+                         })}>
+                           <FileText className="w-3.5 h-3.5" /> View
+                         </Button>
+                       )}
+                     </td>
                   </tr>
                 ))}
               </tbody>
