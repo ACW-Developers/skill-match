@@ -279,6 +279,7 @@ export default function AdminDisbursementsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <TransactionReceipt open={!!receiptData} onClose={() => setReceiptData(null)} data={receiptData} />
     </div>
   );
 }
