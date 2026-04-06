@@ -296,6 +296,7 @@ export default function WorkerEarningsPage() {
                 <th className="text-left p-4 text-muted-foreground font-medium">Status</th>
                 <th className="text-left p-4 text-muted-foreground font-medium">Date</th>
                 <th className="text-left p-4 text-muted-foreground font-medium">Receipt</th>
+              </tr>
             </thead>
             <tbody>
               {payments.map((p) => (
