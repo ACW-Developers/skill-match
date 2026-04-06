@@ -15,6 +15,7 @@ export default function PaymentsPage() {
   const [search, setSearch] = useState("");
   const [chartData, setChartData] = useState<any[]>([]);
   const [resetting, setResetting] = useState<string | null>(null);
+  const [receiptData, setReceiptData] = useState<any>(null);
   const { toast } = useToast();
   const isAdmin = user?.role === "admin";
   const isWorker = user?.role === "worker";
