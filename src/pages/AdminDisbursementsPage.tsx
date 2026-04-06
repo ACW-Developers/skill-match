@@ -21,6 +21,7 @@ export default function AdminDisbursementsPage() {
   const [actionDialog, setActionDialog] = useState<{ withdrawal: any; action: "approve" | "reject" | "complete" } | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [receiptData, setReceiptData] = useState<any>(null);
 
   const load = async () => {
     if (!user) return;
