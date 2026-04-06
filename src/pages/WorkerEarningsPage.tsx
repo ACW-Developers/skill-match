@@ -25,6 +25,7 @@ export default function WorkerEarningsPage() {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawing, setWithdrawing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [receiptData, setReceiptData] = useState<any>(null);
 
   const load = async () => {
     if (!user) return;
