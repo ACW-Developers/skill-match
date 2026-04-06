@@ -249,7 +249,8 @@ export default function WorkerEarningsPage() {
                   <th className="text-left p-4 text-muted-foreground font-medium">Processed</th>
                    <th className="text-left p-4 text-muted-foreground font-medium">Notes</th>
                    <th className="text-left p-4 text-muted-foreground font-medium">Receipt</th>
-              </thead>
+                 </tr>
+               </thead>
               <tbody>
                 {withdrawals.map((w: any) => (
                   <tr key={w.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
