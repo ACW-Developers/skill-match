@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { CreditCard, Search, RotateCcw } from "lucide-react";
+import { CreditCard, Search, RotateCcw, FileText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import TransactionReceipt, { getPaymentMethod } from "@/components/TransactionReceipt";
 
 export default function PaymentsPage() {
   const { user } = useAuth();
@@ -14,6 +15,7 @@ export default function PaymentsPage() {
   const [search, setSearch] = useState("");
   const [chartData, setChartData] = useState<any[]>([]);
   const [resetting, setResetting] = useState<string | null>(null);
+  const [receiptData, setReceiptData] = useState<any>(null);
   const { toast } = useToast();
   const isAdmin = user?.role === "admin";
   const isWorker = user?.role === "worker";
@@ -128,8 +130,9 @@ export default function PaymentsPage() {
                   <th className="text-left p-4 text-muted-foreground font-medium">Amount</th>
                   {(isAdmin || isWorker) && <th className="text-left p-4 text-muted-foreground font-medium">Commission</th>}
                   <th className="text-left p-4 text-muted-foreground font-medium">Status</th>
-                  {isAdmin && <th className="text-left p-4 text-muted-foreground font-medium">Actions</th>}
                   <th className="text-left p-4 text-muted-foreground font-medium">Date</th>
+                  <th className="text-left p-4 text-muted-foreground font-medium">Receipt</th>
+                  {isAdmin && <th className="text-left p-4 text-muted-foreground font-medium">Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -148,6 +151,17 @@ export default function PaymentsPage() {
                       }`}>{p.status}</span>
                     </td>
                     <td className="p-4 text-muted-foreground text-xs">{new Date(p.created_at).toLocaleString()}</td>
+                    <td className="p-4">
+                      {p.status === "completed" && (
+                        <Button size="sm" variant="ghost" className="gap-1.5 text-xs" onClick={() => setReceiptData({
+                          id: p.id, type: "payment", amount: Number(p.amount), commission: Number(p.commission || 0),
+                          status: p.status, date: p.created_at, paymentMethod: getPaymentMethod(p.stripe_payment_id),
+                          jobTitle: p.jobTitle, payerName: p.payerName, payeeName: p.payeeName,
+                        })}>
+                          <FileText className="w-3.5 h-3.5" /> View
+                        </Button>
+                      )}
+                    </td>
                     {isAdmin && (
                       <td className="p-4">
                         {p.status === "failed" ? (
@@ -171,6 +185,7 @@ export default function PaymentsPage() {
           <p className="text-sm text-muted-foreground">Transaction records will appear here</p>
         </div>
       )}
+      <TransactionReceipt open={!!receiptData} onClose={() => setReceiptData(null)} data={receiptData} />
     </div>
   );
 }

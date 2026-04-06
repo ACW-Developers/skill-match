@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowDownCircle, CheckCircle, XCircle, Clock, Search } from "lucide-react";
+import { ArrowDownCircle, CheckCircle, XCircle, Clock, Search, FileText } from "lucide-react";
+import TransactionReceipt from "@/components/TransactionReceipt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +21,7 @@ export default function AdminDisbursementsPage() {
   const [actionDialog, setActionDialog] = useState<{ withdrawal: any; action: "approve" | "reject" | "complete" } | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [receiptData, setReceiptData] = useState<any>(null);
 
   const load = async () => {
     if (!user) return;
@@ -217,7 +219,18 @@ export default function AdminDisbursementsPage() {
                           </Button>
                         )}
                         {(w.status === "completed" || w.status === "rejected") && (
-                          <span className="text-muted-foreground text-xs">—</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-muted-foreground text-xs">—</span>
+                            {w.status === "completed" && (
+                              <Button size="sm" variant="ghost" className="gap-1 text-xs" onClick={() => setReceiptData({
+                                id: w.id, type: "withdrawal", amount: Number(w.amount), status: w.status,
+                                date: w.processed_at || w.requested_at, workerName: w.workerName,
+                                phone: w.workerPhone, adminNotes: w.admin_notes,
+                              })}>
+                                <FileText className="w-3.5 h-3.5" /> Receipt
+                              </Button>
+                            )}
+                          </div>
                         )}
                       </div>
                     </td>
@@ -266,6 +279,7 @@ export default function AdminDisbursementsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <TransactionReceipt open={!!receiptData} onClose={() => setReceiptData(null)} data={receiptData} />
     </div>
   );
 }

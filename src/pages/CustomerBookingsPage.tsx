@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { CalendarDays, Star, CreditCard, Smartphone } from "lucide-react";
+import mpesaLogo from "@/assets/mpesa-logo.png";
+import stripeLogo from "@/assets/stripe-logo.png";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -222,14 +224,14 @@ export default function CustomerBookingsPage() {
                     onClick={() => setPaymentMethod("stripe")}
                     className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-border hover:border-primary transition-colors bg-card"
                   >
-                    <CreditCard className="w-8 h-8 text-primary" />
+                    <img src={stripeLogo} alt="Stripe" className="h-8 w-auto object-contain" />
                     <span className="text-sm font-medium text-foreground">Card (Stripe)</span>
                   </button>
                   <button
                     onClick={() => setPaymentMethod("mpesa")}
                     className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-border hover:border-primary transition-colors bg-card"
                   >
-                    <Smartphone className="w-8 h-8 text-primary" />
+                    <img src={mpesaLogo} alt="M-Pesa" className="h-8 w-auto object-contain" />
                     <span className="text-sm font-medium text-foreground">M-Pesa</span>
                   </button>
                 </div>

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { CreditCard, TrendingUp, DollarSign, ArrowUpRight, ArrowDownCircle, Clock, CheckCircle, XCircle } from "lucide-react";
+import { CreditCard, TrendingUp, DollarSign, ArrowUpRight, ArrowDownCircle, Clock, CheckCircle, XCircle, FileText } from "lucide-react";
+import TransactionReceipt, { getPaymentMethod } from "@/components/TransactionReceipt";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,7 @@ export default function WorkerEarningsPage() {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawing, setWithdrawing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [receiptData, setReceiptData] = useState<any>(null);
 
   const load = async () => {
     if (!user) return;
@@ -245,9 +247,10 @@ export default function WorkerEarningsPage() {
                   <th className="text-left p-4 text-muted-foreground font-medium">Status</th>
                   <th className="text-left p-4 text-muted-foreground font-medium">Requested</th>
                   <th className="text-left p-4 text-muted-foreground font-medium">Processed</th>
-                  <th className="text-left p-4 text-muted-foreground font-medium">Notes</th>
-                </tr>
-              </thead>
+                   <th className="text-left p-4 text-muted-foreground font-medium">Notes</th>
+                   <th className="text-left p-4 text-muted-foreground font-medium">Receipt</th>
+                 </tr>
+               </thead>
               <tbody>
                 {withdrawals.map((w: any) => (
                   <tr key={w.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
@@ -260,7 +263,17 @@ export default function WorkerEarningsPage() {
                     </td>
                     <td className="p-4 text-muted-foreground text-xs">{new Date(w.requested_at).toLocaleString()}</td>
                     <td className="p-4 text-muted-foreground text-xs">{w.processed_at ? new Date(w.processed_at).toLocaleString() : "—"}</td>
-                    <td className="p-4 text-muted-foreground text-xs">{w.admin_notes || "—"}</td>
+                     <td className="p-4 text-muted-foreground text-xs">{w.admin_notes || "—"}</td>
+                     <td className="p-4">
+                       {w.status === "completed" && (
+                         <Button size="sm" variant="ghost" className="gap-1.5 text-xs" onClick={() => setReceiptData({
+                           id: w.id, type: "withdrawal", amount: Number(w.amount), status: w.status,
+                           date: w.processed_at || w.requested_at, workerName: user?.name, adminNotes: w.admin_notes,
+                         })}>
+                           <FileText className="w-3.5 h-3.5" /> View
+                         </Button>
+                       )}
+                     </td>
                   </tr>
                 ))}
               </tbody>
@@ -282,6 +295,7 @@ export default function WorkerEarningsPage() {
                 <th className="text-left p-4 text-muted-foreground font-medium">Amount</th>
                 <th className="text-left p-4 text-muted-foreground font-medium">Status</th>
                 <th className="text-left p-4 text-muted-foreground font-medium">Date</th>
+                <th className="text-left p-4 text-muted-foreground font-medium">Receipt</th>
               </tr>
             </thead>
             <tbody>
@@ -297,6 +311,17 @@ export default function WorkerEarningsPage() {
                     }`}>{p.status}</span>
                   </td>
                   <td className="p-4 text-muted-foreground text-xs">{new Date(p.created_at).toLocaleString()}</td>
+                  <td className="p-4">
+                    {p.status === "completed" && (
+                      <Button size="sm" variant="ghost" className="gap-1.5 text-xs" onClick={() => setReceiptData({
+                        id: p.id, type: "payment", amount: Number(p.amount), commission: Number(p.commission || 0),
+                        status: p.status, date: p.created_at, paymentMethod: getPaymentMethod(p.stripe_payment_id),
+                        jobTitle: (p as any).jobs?.title || "-", payeeName: user?.name,
+                      })}>
+                        <FileText className="w-3.5 h-3.5" /> View
+                      </Button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -309,6 +334,7 @@ export default function WorkerEarningsPage() {
           <p className="text-sm text-muted-foreground">Complete jobs to start earning</p>
         </div>
       )}
+      <TransactionReceipt open={!!receiptData} onClose={() => setReceiptData(null)} data={receiptData} />
     </div>
   );
 }
