@@ -334,6 +334,7 @@ export default function WorkerEarningsPage() {
           <p className="text-sm text-muted-foreground">Complete jobs to start earning</p>
         </div>
       )}
+      <TransactionReceipt open={!!receiptData} onClose={() => setReceiptData(null)} data={receiptData} />
     </div>
   );
 }
