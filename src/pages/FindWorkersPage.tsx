@@ -127,6 +127,7 @@ export default function FindWorkersPage() {
 
     toast({ title: "Hire request sent!", description: `${hireDialog.name} will be notified to accept or reject.` });
     setHireDialog(null);
+    setSelectedWorker(null);
     setHiring(false);
     navigate("/dashboard/bookings");
   };
