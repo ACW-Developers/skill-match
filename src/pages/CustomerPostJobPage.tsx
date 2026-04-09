@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Briefcase, Plus, MapPin, Clock, Users, Check, X, CalendarDays, Pencil } from "lucide-react";
+import { Briefcase, Plus, MapPin, Clock, Users, Check, X, CalendarDays, Pencil, ImagePlus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -26,6 +26,8 @@ export default function CustomerPostJobPage() {
   const [categoryId, setCategoryId] = useState("");
   const [isInstant, setIsInstant] = useState(false);
   const [deadline, setDeadline] = useState("");
+  const [jobImage, setJobImage] = useState<File | null>(null);
+  const [jobImagePreview, setJobImagePreview] = useState<string | null>(null);
   const [viewAppsJobId, setViewAppsJobId] = useState<string | null>(null);
   const [applications, setApplications] = useState<any[]>([]);
   const [loadingApps, setLoadingApps] = useState(false);
@@ -36,6 +38,8 @@ export default function CustomerPostJobPage() {
   const [editBudget, setEditBudget] = useState("");
   const [editAddress, setEditAddress] = useState("");
   const [editCategoryId, setEditCategoryId] = useState("");
+  const [editImage, setEditImage] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   async function loadData() {
@@ -60,13 +64,39 @@ export default function CustomerPostJobPage() {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
+  const handleImageSelect = (file: File | null, setFile: (f: File | null) => void, setPreview: (p: string | null) => void) => {
+    if (!file) { setFile(null); setPreview(null); return; }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Image too large", description: "Max 5MB allowed", variant: "destructive" });
+      return;
+    }
+    setFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const uploadJobImage = async (file: File): Promise<string | null> => {
+    const ext = file.name.split(".").pop();
+    const path = `${user!.id}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("job-images").upload(path, file);
+    if (error) { toast({ title: "Image upload failed", description: error.message, variant: "destructive" }); return null; }
+    const { data } = supabase.storage.from("job-images").getPublicUrl(path);
+    return data.publicUrl;
+  };
+
   const createJob = async () => {
     if (!user || !title.trim()) return;
     setCreating(true);
+
+    let imageUrl: string | null = null;
+    if (jobImage) imageUrl = await uploadJobImage(jobImage);
+
     const { error } = await supabase.from("jobs").insert({
       title: title.trim(), description: description.trim() || null,
       budget: budget ? Number(budget) : null, address: address.trim() || null,
       category_id: categoryId || null, customer_id: user.id, is_instant: isInstant,
+      image_url: imageUrl,
     });
     if (error) {
       toast({ title: "Error creating job", description: error.message, variant: "destructive" });
@@ -75,7 +105,7 @@ export default function CustomerPostJobPage() {
       await supabase.from("activity_logs").insert({
         user_id: user.id, action: "Job Posted", detail: `Posted "${title.trim()}"${deadline ? ` - Deadline: ${deadline}` : ""}`, entity_type: "job",
       });
-      setTitle(""); setDescription(""); setBudget(""); setAddress(""); setCategoryId(""); setIsInstant(false); setDeadline(""); setShowCreate(false);
+      setTitle(""); setDescription(""); setBudget(""); setAddress(""); setCategoryId(""); setIsInstant(false); setDeadline(""); setJobImage(null); setJobImagePreview(null); setShowCreate(false);
     }
     setCreating(false); loadData();
   };
@@ -87,17 +117,27 @@ export default function CustomerPostJobPage() {
     setEditBudget(job.budget?.toString() || "");
     setEditAddress(job.address || "");
     setEditCategoryId(job.category_id || "");
+    setEditImage(null);
+    setEditImagePreview(job.image_url || null);
   };
 
   const saveEditJob = async () => {
     if (!editJob || !editTitle.trim()) return;
     setSaving(true);
+
+    let imageUrl = editJob.image_url;
+    if (editImage) {
+      const uploaded = await uploadJobImage(editImage);
+      if (uploaded) imageUrl = uploaded;
+    }
+
     const { error } = await supabase.from("jobs").update({
       title: editTitle.trim(),
       description: editDescription.trim() || null,
       budget: editBudget ? Number(editBudget) : null,
       address: editAddress.trim() || null,
       category_id: editCategoryId || null,
+      image_url: imageUrl,
     }).eq("id", editJob.id);
     if (error) {
       toast({ title: "Update failed", description: error.message, variant: "destructive" });
@@ -147,6 +187,21 @@ export default function CustomerPostJobPage() {
   const activeJobs = myJobs.filter(j => ["pending", "accepted", "in_progress"].includes(j.status));
   const pastJobs = myJobs.filter(j => ["completed", "cancelled"].includes(j.status));
 
+  const ImageUploadField = ({ preview, onSelect }: { preview: string | null; onSelect: (f: File | null) => void }) => (
+    <div className="space-y-2">
+      <Label className="flex items-center gap-2"><ImagePlus className="w-4 h-4" /> Work Image</Label>
+      {preview && (
+        <div className="relative w-full h-32 rounded-lg overflow-hidden bg-muted">
+          <img src={preview} alt="Job" className="w-full h-full object-cover" />
+          <button type="button" onClick={() => onSelect(null)} className="absolute top-1 right-1 bg-background/80 rounded-full p-1 text-destructive hover:bg-background">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+      <Input type="file" accept="image/*" onChange={(e) => onSelect(e.target.files?.[0] || null)} className="bg-muted/50" />
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -167,22 +222,27 @@ export default function CustomerPostJobPage() {
             {(tab === "active" ? activeJobs : pastJobs).length > 0 ? (tab === "active" ? activeJobs : pastJobs).map((job, i) => (
               <div key={job.id} className="stat-card animate-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
                 <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{(job as any).service_categories?.icon || "🔧"}</span>
-                      <h3 className="font-semibold text-foreground">{job.title}</h3>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
-                        job.status === "completed" ? "bg-green-500/10 text-green-500" :
-                        job.status === "in_progress" ? "bg-primary/10 text-primary" :
-                        job.status === "cancelled" ? "bg-destructive/10 text-destructive" :
-                        "bg-chart-4/10 text-chart-4"
-                      }`}>{job.status.replace("_", " ")}</span>
-                    </div>
-                    {job.description && <p className="text-sm text-muted-foreground">{job.description}</p>}
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      {job.address && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.address}</span>}
-                      <span className="flex items-center gap-1">KSH {job.budget ? job.budget.toLocaleString() : "Open"}</span>
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(job.created_at).toLocaleString()}</span>
+                  <div className="flex gap-3">
+                    {job.image_url && (
+                      <img src={job.image_url} alt={job.title} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
+                    )}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{(job as any).service_categories?.icon || "🔧"}</span>
+                        <h3 className="font-semibold text-foreground">{job.title}</h3>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
+                          job.status === "completed" ? "bg-green-500/10 text-green-500" :
+                          job.status === "in_progress" ? "bg-primary/10 text-primary" :
+                          job.status === "cancelled" ? "bg-destructive/10 text-destructive" :
+                          "bg-chart-4/10 text-chart-4"
+                        }`}>{job.status.replace("_", " ")}</span>
+                      </div>
+                      {job.description && <p className="text-sm text-muted-foreground">{job.description}</p>}
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        {job.address && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.address}</span>}
+                        <span className="flex items-center gap-1">KSH {job.budget ? job.budget.toLocaleString() : "Open"}</span>
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(job.created_at).toLocaleString()}</span>
+                      </div>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -211,11 +271,12 @@ export default function CustomerPostJobPage() {
 
       {/* Create Job Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Post a New Job</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2"><Label>Job Title *</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Fix kitchen faucet" className="bg-muted/50" /></div>
             <div className="space-y-2"><Label>Description</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the work needed..." className="bg-muted/50" /></div>
+            <ImageUploadField preview={jobImagePreview} onSelect={(f) => handleImageSelect(f, setJobImage, setJobImagePreview)} />
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2"><Label>Budget (KSH)</Label><Input type="number" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="5000" className="bg-muted/50" /></div>
               <div className="space-y-2">
@@ -245,11 +306,12 @@ export default function CustomerPostJobPage() {
 
       {/* Edit Job Dialog */}
       <Dialog open={!!editJob} onOpenChange={(open) => !open && setEditJob(null)}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Edit Job Post</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2"><Label>Job Title *</Label><Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="bg-muted/50" /></div>
             <div className="space-y-2"><Label>Description</Label><Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className="bg-muted/50" /></div>
+            <ImageUploadField preview={editImagePreview} onSelect={(f) => handleImageSelect(f, setEditImage, setEditImagePreview)} />
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2"><Label>Budget (KSH)</Label><Input type="number" value={editBudget} onChange={(e) => setEditBudget(e.target.value)} className="bg-muted/50" /></div>
               <div className="space-y-2">

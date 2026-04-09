@@ -226,6 +226,7 @@ export type Database = {
           customer_id: string
           description: string | null
           id: string
+          image_url: string | null
           is_instant: boolean
           latitude: number | null
           longitude: number | null
@@ -242,6 +243,7 @@ export type Database = {
           customer_id: string
           description?: string | null
           id?: string
+          image_url?: string | null
           is_instant?: boolean
           latitude?: number | null
           longitude?: number | null
@@ -258,6 +260,7 @@ export type Database = {
           customer_id?: string
           description?: string | null
           id?: string
+          image_url?: string | null
           is_instant?: boolean
           latitude?: number | null
           longitude?: number | null
