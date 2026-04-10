@@ -162,7 +162,7 @@ export default function CustomerDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Find Skilled Workers</h1>
+        <h1 className="text-2xl font-bold text-foreground">Find Skilled Fundis</h1>
         <p className="text-muted-foreground text-sm">Book trusted professionals near you</p>
       </div>
 
@@ -215,7 +215,7 @@ export default function CustomerDashboard() {
       </div>
 
       <div className="animate-fade-in" style={{ animationDelay: "300ms" }}>
-        <h2 className="text-lg font-semibold text-foreground mb-3">Available Workers</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-3">Available Fundis</h2>
         {nearbyWorkers.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {nearbyWorkers.map((worker) => (
@@ -248,7 +248,7 @@ export default function CustomerDashboard() {
         ) : (
           <div className="stat-card flex flex-col items-center justify-center py-12 text-center">
             <MapPin className="w-10 h-10 text-muted-foreground mb-3" />
-            <p className="text-sm text-muted-foreground">No workers available right now. Check back soon!</p>
+            <p className="text-sm text-muted-foreground">No fundis available right now. Check back soon!</p>
           </div>
         )}
       </div>
@@ -278,7 +278,7 @@ export default function CustomerDashboard() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader><DialogTitle>Hire {hireDialog?.name}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">Fill in the job details. The worker will be notified and can accept or reject.</p>
+            <p className="text-sm text-muted-foreground">Fill in the job details. The fundi will be notified and can accept or reject.</p>
             <div className="space-y-2"><Label>Job Title *</Label><Input value={hireTitle} onChange={(e) => setHireTitle(e.target.value)} className="bg-muted/50" /></div>
             <div className="space-y-2"><Label>Description</Label><Textarea value={hireDescription} onChange={(e) => setHireDescription(e.target.value)} placeholder="Describe the work needed..." className="bg-muted/50" /></div>
             <div className="grid grid-cols-2 gap-4">
