@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, X, FileText, Clock, Eye, ShieldCheck, ShieldX, ShieldAlert } from "lucide-react";
+import { Check, X, FileText, Clock, Eye, ShieldCheck, ShieldX, ShieldAlert, User, MapPin, GraduationCap, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,14 +14,14 @@ export default function VerificationPage() {
   const { toast } = useToast();
   const [workers, setWorkers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewDocs, setViewDocs] = useState<any>(null);
+  const [viewWorker, setViewWorker] = useState<any>(null);
   const [certs, setCerts] = useState<any[]>([]);
 
   async function loadAll() {
     setLoading(true);
     const { data } = await supabase
       .from("worker_profiles")
-      .select("*, profiles:user_id(name, email, avatar_url), certifications(id, name, file_url)")
+      .select("*, profiles:user_id(name, email, avatar_url, phone), certifications(id, name, file_url)")
       .order("created_at", { ascending: false });
     setWorkers(data || []);
     setLoading(false);
@@ -39,15 +39,15 @@ export default function VerificationPage() {
     await supabase.from("worker_profiles").update({ verification_status: action }).eq("id", workerId);
     await supabase.from("activity_logs").insert({
       user_id: user!.id,
-      action: action === "approved" ? "Worker Approved" : "Worker Rejected",
-      detail: `Worker ${action}`, entity_type: "worker_profile", entity_id: workerId,
+      action: action === "approved" ? "Fundi Approved" : "Fundi Rejected",
+      detail: `Fundi ${action}`, entity_type: "worker_profile", entity_id: workerId,
     });
-    toast({ title: `Worker ${action}` });
+    toast({ title: `Fundi ${action}` });
     loadAll();
   };
 
   const viewDocuments = (worker: any) => {
-    setViewDocs(worker);
+    setViewWorker(worker);
     setCerts(worker.certifications || []);
   };
 
@@ -68,7 +68,7 @@ export default function VerificationPage() {
           <div className="w-11 h-11 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-sm overflow-hidden">
             {w.profiles?.avatar_url
               ? <img src={w.profiles.avatar_url} className="w-full h-full object-cover rounded-full" />
-              : (w.profiles?.name || "W").split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
+              : (w.profiles?.name || "F").split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -108,14 +108,26 @@ export default function VerificationPage() {
     return <div className="space-y-6"><Skeleton className="h-8 w-48" /><div className="space-y-4">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}</div></div>;
   }
 
+  // Categorize certs for the detail dialog
+  const requiredDocNames = ["national id", "nca document"];
+  const licenseDocNames = ["certificate of good conduct"];
+  const academicDocNames = ["academic certificate"];
+
+  const categorizeCert = (name: string) => {
+    const lower = name.toLowerCase();
+    if (requiredDocNames.some(d => lower.includes(d))) return "id";
+    if (licenseDocNames.some(d => lower.includes(d))) return "license";
+    if (academicDocNames.some(d => lower.includes(d))) return "academic";
+    return "other";
+  };
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Worker Verification</h1>
-        <p className="text-muted-foreground text-sm">Review and manage worker verification status</p>
+        <h1 className="text-2xl font-bold text-foreground">Fundi Verification</h1>
+        <p className="text-muted-foreground text-sm">Review and manage fundi verification status</p>
       </div>
 
-      {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="rounded-xl border bg-card p-4 flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><ShieldAlert className="w-5 h-5 text-amber-500" /></div>
@@ -133,56 +145,91 @@ export default function VerificationPage() {
 
       <Tabs defaultValue="pending" className="w-full">
         <TabsList className="w-full sm:w-auto">
-          <TabsTrigger value="pending" className="gap-1.5">
-            <ShieldAlert className="w-4 h-4" /> Pending ({pending.length})
-          </TabsTrigger>
-          <TabsTrigger value="approved" className="gap-1.5">
-            <ShieldCheck className="w-4 h-4" /> Approved ({approved.length})
-          </TabsTrigger>
-          <TabsTrigger value="rejected" className="gap-1.5">
-            <ShieldX className="w-4 h-4" /> Rejected ({rejected.length})
-          </TabsTrigger>
+          <TabsTrigger value="pending" className="gap-1.5"><ShieldAlert className="w-4 h-4" /> Pending ({pending.length})</TabsTrigger>
+          <TabsTrigger value="approved" className="gap-1.5"><ShieldCheck className="w-4 h-4" /> Approved ({approved.length})</TabsTrigger>
+          <TabsTrigger value="rejected" className="gap-1.5"><ShieldX className="w-4 h-4" /> Rejected ({rejected.length})</TabsTrigger>
         </TabsList>
-
         <TabsContent value="pending" className="space-y-3 mt-4">
-          {pending.length > 0
-            ? pending.map((w, i) => renderWorkerCard(w, i, true))
-            : emptyState(<Check className="w-10 h-10 text-green-500" />, "All caught up!", "No pending verifications")}
+          {pending.length > 0 ? pending.map((w, i) => renderWorkerCard(w, i, true)) : emptyState(<Check className="w-10 h-10 text-green-500" />, "All caught up!", "No pending verifications")}
         </TabsContent>
-
         <TabsContent value="approved" className="space-y-3 mt-4">
-          {approved.length > 0
-            ? approved.map((w, i) => renderWorkerCard(w, i, true))
-            : emptyState(<ShieldCheck className="w-10 h-10 text-muted-foreground" />, "No approved workers yet", "Approve pending workers to see them here")}
+          {approved.length > 0 ? approved.map((w, i) => renderWorkerCard(w, i, true)) : emptyState(<ShieldCheck className="w-10 h-10 text-muted-foreground" />, "No approved fundis yet", "Approve pending fundis to see them here")}
         </TabsContent>
-
         <TabsContent value="rejected" className="space-y-3 mt-4">
-          {rejected.length > 0
-            ? rejected.map((w, i) => renderWorkerCard(w, i, true))
-            : emptyState(<ShieldX className="w-10 h-10 text-muted-foreground" />, "No rejected workers", "Rejected workers will appear here")}
+          {rejected.length > 0 ? rejected.map((w, i) => renderWorkerCard(w, i, true)) : emptyState(<ShieldX className="w-10 h-10 text-muted-foreground" />, "No rejected fundis", "Rejected fundis will appear here")}
         </TabsContent>
       </Tabs>
 
-      <Dialog open={!!viewDocs} onOpenChange={(o) => !o && setViewDocs(null)}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader><DialogTitle>Worker Documents - {viewDocs?.profiles?.name}</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="p-3 rounded-lg bg-muted/50"><p className="text-muted-foreground text-xs">Bio</p><p className="text-foreground">{viewDocs?.bio || "Not provided"}</p></div>
-              <div className="p-3 rounded-lg bg-muted/50"><p className="text-muted-foreground text-xs">Rate</p><p className="text-foreground">{viewDocs?.hourly_rate ? `KSH ${viewDocs.hourly_rate}/hr` : "-"}</p></div>
-              <div className="p-3 rounded-lg bg-muted/50"><p className="text-muted-foreground text-xs">Experience</p><p className="text-foreground">{viewDocs?.years_experience || 0} years</p></div>
-              <div className="p-3 rounded-lg bg-muted/50"><p className="text-muted-foreground text-xs">Area</p><p className="text-foreground">{viewDocs?.service_area || "-"}</p></div>
-            </div>
-            <div>
-              <h4 className="text-sm font-medium text-foreground mb-2">Uploaded Documents ({certs.length})</h4>
-              {certs.length > 0 ? certs.map((cert: any) => (
-                <div key={cert.id} className="flex items-center justify-between p-2 rounded bg-muted/50 mb-1">
-                  <div className="flex items-center gap-2"><FileText className="w-4 h-4 text-primary" /><span className="text-sm">{cert.name}</span></div>
-                  {cert.file_url && <a href={cert.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View File</a>}
+      {/* Detail Dialog with Tabs */}
+      <Dialog open={!!viewWorker} onOpenChange={(o) => !o && setViewWorker(null)}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Fundi Details - {viewWorker?.profiles?.name}</DialogTitle></DialogHeader>
+          {viewWorker && (
+            <Tabs defaultValue="personal" className="space-y-4">
+              <TabsList className="flex flex-wrap h-auto gap-1">
+                <TabsTrigger value="personal"><User className="w-3.5 h-3.5 mr-1" /> Personal</TabsTrigger>
+                <TabsTrigger value="skills"><Award className="w-3.5 h-3.5 mr-1" /> Skills</TabsTrigger>
+                <TabsTrigger value="location"><MapPin className="w-3.5 h-3.5 mr-1" /> Location</TabsTrigger>
+                <TabsTrigger value="docs"><FileText className="w-3.5 h-3.5 mr-1" /> Documents</TabsTrigger>
+                <TabsTrigger value="academic"><GraduationCap className="w-3.5 h-3.5 mr-1" /> Academic</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="personal" className="space-y-3">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="p-3 rounded-lg bg-muted/50"><p className="text-muted-foreground text-xs">Name</p><p className="text-foreground">{viewWorker.profiles?.name || "-"}</p></div>
+                  <div className="p-3 rounded-lg bg-muted/50"><p className="text-muted-foreground text-xs">Email</p><p className="text-foreground">{viewWorker.profiles?.email || "-"}</p></div>
+                  <div className="p-3 rounded-lg bg-muted/50"><p className="text-muted-foreground text-xs">Phone</p><p className="text-foreground">{viewWorker.profiles?.phone || "-"}</p></div>
+                  <div className="p-3 rounded-lg bg-muted/50"><p className="text-muted-foreground text-xs">Gender</p><p className="text-foreground capitalize">{viewWorker.gender || "-"}</p></div>
+                  <div className="p-3 rounded-lg bg-muted/50"><p className="text-muted-foreground text-xs">Date of Birth</p><p className="text-foreground">{viewWorker.date_of_birth || "-"}</p></div>
+                  <div className="p-3 rounded-lg bg-muted/50"><p className="text-muted-foreground text-xs">ID Number</p><p className="text-foreground">{viewWorker.id_number || "-"}</p></div>
+                  <div className="p-3 rounded-lg bg-muted/50 col-span-2"><p className="text-muted-foreground text-xs">Bio</p><p className="text-foreground">{viewWorker.bio || "Not provided"}</p></div>
                 </div>
-              )) : <p className="text-sm text-muted-foreground text-center py-4">No documents uploaded</p>}
-            </div>
-          </div>
+              </TabsContent>
+
+              <TabsContent value="skills" className="space-y-3">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="p-3 rounded-lg bg-muted/50"><p className="text-muted-foreground text-xs">Rate</p><p className="text-foreground">{viewWorker.hourly_rate ? `KSH ${viewWorker.hourly_rate}/hr` : "-"}</p></div>
+                  <div className="p-3 rounded-lg bg-muted/50"><p className="text-muted-foreground text-xs">Experience</p><p className="text-foreground">{viewWorker.years_experience || 0} years</p></div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="location" className="space-y-3">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="p-3 rounded-lg bg-muted/50"><p className="text-muted-foreground text-xs">Country</p><p className="text-foreground">{viewWorker.country || "-"}</p></div>
+                  <div className="p-3 rounded-lg bg-muted/50"><p className="text-muted-foreground text-xs">County</p><p className="text-foreground">{viewWorker.county || "-"}</p></div>
+                  <div className="p-3 rounded-lg bg-muted/50"><p className="text-muted-foreground text-xs">Constituency</p><p className="text-foreground">{viewWorker.constituency || "-"}</p></div>
+                  <div className="p-3 rounded-lg bg-muted/50"><p className="text-muted-foreground text-xs">Ward</p><p className="text-foreground">{viewWorker.ward || "-"}</p></div>
+                  <div className="p-3 rounded-lg bg-muted/50 col-span-2"><p className="text-muted-foreground text-xs">Service Area</p><p className="text-foreground">{viewWorker.service_area || "-"}</p></div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="docs" className="space-y-3">
+                <h4 className="text-sm font-medium text-foreground">ID & Certifications ({certs.filter(c => categorizeCert(c.name) === "id" || categorizeCert(c.name) === "license" || categorizeCert(c.name) === "other").length})</h4>
+                {certs.filter(c => ["id", "license", "other"].includes(categorizeCert(c.name))).map((cert: any) => (
+                  <div key={cert.id} className="flex items-center justify-between p-2 rounded bg-muted/50 mb-1">
+                    <div className="flex items-center gap-2"><FileText className="w-4 h-4 text-primary" /><span className="text-sm">{cert.name}</span></div>
+                    {cert.file_url && <a href={cert.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View File</a>}
+                  </div>
+                ))}
+                {certs.filter(c => ["id", "license", "other"].includes(categorizeCert(c.name))).length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">No documents uploaded</p>
+                )}
+              </TabsContent>
+
+              <TabsContent value="academic" className="space-y-3">
+                <h4 className="text-sm font-medium text-foreground">Academic Documents</h4>
+                {certs.filter(c => categorizeCert(c.name) === "academic").map((cert: any) => (
+                  <div key={cert.id} className="flex items-center justify-between p-2 rounded bg-muted/50 mb-1">
+                    <div className="flex items-center gap-2"><GraduationCap className="w-4 h-4 text-primary" /><span className="text-sm">{cert.name}</span></div>
+                    {cert.file_url && <a href={cert.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View File</a>}
+                  </div>
+                ))}
+                {certs.filter(c => categorizeCert(c.name) === "academic").length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">No academic documents uploaded</p>
+                )}
+              </TabsContent>
+            </Tabs>
+          )}
         </DialogContent>
       </Dialog>
     </div>
