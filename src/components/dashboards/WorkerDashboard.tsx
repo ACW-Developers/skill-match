@@ -185,7 +185,7 @@ function OnlineCustomers() {
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase.from("profiles").select("id, name, avatar_url, latitude, longitude").eq("is_online" as any, true).not("latitude" as any, "is", null);
+      const { data } = await (supabase.from("profiles").select("id, name, avatar_url, latitude, longitude") as any).eq("is_online", true).not("latitude", "is", null);
       setCustomers(data || []);
     }
     load();
