@@ -3,14 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Briefcase } from "lucide-react";
+import { Search, Briefcase, ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 export default function AdminJobsPage() {
   const { toast } = useToast();
   const [jobs, setJobs] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   async function loadJobs() {
     const { data } = await supabase
@@ -19,7 +21,6 @@ export default function AdminJobsPage() {
       .order("created_at", { ascending: false })
       .limit(100);
 
-    // Fetch profile names separately
     const allUserIds = [...new Set([
       ...(data || []).map(j => j.customer_id),
       ...(data || []).map(j => j.worker_id).filter(Boolean),
@@ -34,7 +35,7 @@ export default function AdminJobsPage() {
       ...j,
       customerName: nameMap[j.customer_id] || "Unknown",
       workerName: j.worker_id ? (nameMap[j.worker_id] || "Unknown") : null,
-      categoryName: (j as any).service_categories?.name || "—",
+      categoryName: (j as any).service_categories?.name || "-",
     })));
     setLoading(false);
   }
@@ -79,7 +80,7 @@ export default function AdminJobsPage() {
               <tr className="border-b border-border bg-muted/30">
                 <th className="text-left p-4 text-muted-foreground font-medium">Job</th>
                 <th className="text-left p-4 text-muted-foreground font-medium">Customer</th>
-                <th className="text-left p-4 text-muted-foreground font-medium">Worker</th>
+                <th className="text-left p-4 text-muted-foreground font-medium">Fundi</th>
                 <th className="text-left p-4 text-muted-foreground font-medium">Category</th>
                 <th className="text-left p-4 text-muted-foreground font-medium">Budget</th>
                 <th className="text-left p-4 text-muted-foreground font-medium">Status</th>
@@ -90,11 +91,18 @@ export default function AdminJobsPage() {
             <tbody>
               {filtered.length > 0 ? filtered.map((job) => (
                 <tr key={job.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                  <td className="p-4 font-medium text-foreground">{job.title}</td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-2">
+                      {job.image_url && (
+                        <img src={job.image_url} alt="" className="w-8 h-8 rounded object-cover cursor-pointer hover:opacity-80" onClick={() => setImagePreview(job.image_url)} />
+                      )}
+                      <span className="font-medium text-foreground">{job.title}</span>
+                    </div>
+                  </td>
                   <td className="p-4 text-muted-foreground">{job.customerName}</td>
-                  <td className="p-4 text-muted-foreground">{job.workerName || "—"}</td>
+                  <td className="p-4 text-muted-foreground">{job.workerName || "-"}</td>
                   <td className="p-4 text-muted-foreground">{job.categoryName}</td>
-                  <td className="p-4 text-foreground tabular-nums">{job.budget ? `$${job.budget}` : "—"}</td>
+                  <td className="p-4 text-foreground tabular-nums">{job.budget ? `KSH ${job.budget}` : "-"}</td>
                   <td className="p-4">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
                       job.status === "completed" ? "bg-green-500/10 text-green-500" :
@@ -117,6 +125,12 @@ export default function AdminJobsPage() {
           </table>
         </div>
       </div>
+
+      <Dialog open={!!imagePreview} onOpenChange={(o) => !o && setImagePreview(null)}>
+        <DialogContent className="sm:max-w-lg p-2">
+          {imagePreview && <img src={imagePreview} alt="Job" className="w-full rounded-lg" />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -166,12 +166,13 @@ export default function FindWorkersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Find Workers</h1>
+        <h1 className="text-2xl font-bold text-foreground">Find Fundis</h1>
         <p className="text-muted-foreground text-sm">Browse verified skilled professionals</p>
       </div>
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input placeholder="Search by name or skill..." className="pl-10 bg-card" value={search} onChange={(e) => setSearch(e.target.value)} />
+
       </div>
 
       {filtered.length > 0 ? (
@@ -212,7 +213,7 @@ export default function FindWorkersPage() {
       ) : (
         <div className="stat-card flex flex-col items-center py-16 text-center">
           <Search className="w-10 h-10 text-muted-foreground mb-3" />
-          <p className="text-foreground font-medium">No workers found</p>
+          <p className="text-foreground font-medium">No fundis found</p>
           <p className="text-sm text-muted-foreground">Try a different search term</p>
         </div>
       )}
@@ -303,7 +304,7 @@ export default function FindWorkersPage() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader><DialogTitle>Hire {hireDialog?.name}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">Fill in the job details. The worker will be notified and can accept or reject.</p>
+            <p className="text-sm text-muted-foreground">Fill in the job details. The fundi will be notified and can accept or reject.</p>
             <div className="space-y-2"><Label>Job Title *</Label><Input value={hireTitle} onChange={(e) => setHireTitle(e.target.value)} className="bg-muted/50" /></div>
             <div className="space-y-2"><Label>Description</Label><Textarea value={hireDescription} onChange={(e) => setHireDescription(e.target.value)} placeholder="Describe the work needed..." className="bg-muted/50" /></div>
             <div className="grid grid-cols-2 gap-4">

@@ -167,12 +167,13 @@ export default function WorkerMyJobsPage() {
             <div key={job.id} className="stat-card border-primary/30 bg-primary/5 animate-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
               <div className="space-y-2">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="space-y-1">
+                    <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{(job as any).service_categories?.icon || "🔧"}</span>
                       <h3 className="font-semibold text-foreground">{job.title}</h3>
                       <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">New Request</span>
                     </div>
+                    {job.image_url && <img src={job.image_url} alt="Job" className="w-full max-w-xs rounded-lg mt-2" />}
                     {job.description && <p className="text-sm text-muted-foreground">{job.description}</p>}
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       {job.address && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.address}</span>}
@@ -212,6 +213,7 @@ export default function WorkerMyJobsPage() {
                     <span className="text-lg">{(job as any).service_categories?.icon || "🔧"}</span>
                     <h3 className="font-semibold text-foreground">{job.title}</h3>
                   </div>
+                  {job.image_url && <img src={job.image_url} alt="Job" className="w-full max-w-xs rounded-lg" />}
                   {job.description && <p className="text-sm text-muted-foreground">{job.description}</p>}
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.address || "No location"}</span>

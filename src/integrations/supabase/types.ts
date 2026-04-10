@@ -379,6 +379,9 @@ export type Database = {
           email: string
           id: string
           is_active: boolean
+          is_online: boolean
+          latitude: number | null
+          longitude: number | null
           name: string
           phone: string | null
           updated_at: string
@@ -389,6 +392,9 @@ export type Database = {
           email: string
           id: string
           is_active?: boolean
+          is_online?: boolean
+          latitude?: number | null
+          longitude?: number | null
           name?: string
           phone?: string | null
           updated_at?: string
@@ -399,6 +405,9 @@ export type Database = {
           email?: string
           id?: string
           is_active?: boolean
+          is_online?: boolean
+          latitude?: number | null
+          longitude?: number | null
           name?: string
           phone?: string | null
           updated_at?: string
@@ -538,9 +547,15 @@ export type Database = {
       worker_profiles: {
         Row: {
           bio: string | null
+          constituency: string | null
+          country: string | null
+          county: string | null
           created_at: string
+          date_of_birth: string | null
+          gender: string | null
           hourly_rate: number | null
           id: string
+          id_number: string | null
           is_online: boolean
           latitude: number | null
           longitude: number | null
@@ -549,13 +564,20 @@ export type Database = {
           updated_at: string
           user_id: string
           verification_status: Database["public"]["Enums"]["verification_status"]
+          ward: string | null
           years_experience: number | null
         }
         Insert: {
           bio?: string | null
+          constituency?: string | null
+          country?: string | null
+          county?: string | null
           created_at?: string
+          date_of_birth?: string | null
+          gender?: string | null
           hourly_rate?: number | null
           id?: string
+          id_number?: string | null
           is_online?: boolean
           latitude?: number | null
           longitude?: number | null
@@ -564,13 +586,20 @@ export type Database = {
           updated_at?: string
           user_id: string
           verification_status?: Database["public"]["Enums"]["verification_status"]
+          ward?: string | null
           years_experience?: number | null
         }
         Update: {
           bio?: string | null
+          constituency?: string | null
+          country?: string | null
+          county?: string | null
           created_at?: string
+          date_of_birth?: string | null
+          gender?: string | null
           hourly_rate?: number | null
           id?: string
+          id_number?: string | null
           is_online?: boolean
           latitude?: number | null
           longitude?: number | null
@@ -579,6 +608,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           verification_status?: Database["public"]["Enums"]["verification_status"]
+          ward?: string | null
           years_experience?: number | null
         }
         Relationships: [

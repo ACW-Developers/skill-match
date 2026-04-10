@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Search, MapPin, Star, Zap, CalendarDays, CreditCard, Briefcase } from "lucide-react";
+import { Search, MapPin, Star, Zap, CalendarDays, CreditCard, Briefcase, ToggleLeft, ToggleRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +30,7 @@ export default function CustomerDashboard() {
   const [nearbyWorkers, setNearbyWorkers] = useState<any[]>([]);
   const [stats, setStats] = useState({ bookings: 0, spent: 0, avgRating: 0 });
   const [loading, setLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState(false);
 
   // Hire dialog state
   const [hireDialog, setHireDialog] = useState<any>(null);
@@ -91,9 +92,36 @@ export default function CustomerDashboard() {
     navigate("/dashboard/bookings");
   };
 
+  const toggleOnline = async () => {
+    if (!user) return;
+    const newStatus = !isOnline;
+    setIsOnline(newStatus);
+
+    if (newStatus && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          await supabase.from("profiles").update({
+            is_online: true,
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+          } as any).eq("id", user.id);
+        },
+        async () => {
+          await supabase.from("profiles").update({ is_online: true } as any).eq("id", user.id);
+        }
+      );
+    } else {
+      await supabase.from("profiles").update({ is_online: false, latitude: null, longitude: null } as any).eq("id", user.id);
+    }
+  };
+
   useEffect(() => {
     if (!user) return;
     async function load() {
+      // Get current customer online status
+      const { data: myProfile } = await supabase.from("profiles").select("is_online").eq("id", user!.id).single();
+      setIsOnline((myProfile as any)?.is_online || false);
+
       const { data: cats } = await supabase.from("service_categories").select("*");
       const { data: workers } = await supabase.from("worker_profiles").select("skills");
       const skillCounts: Record<string, number> = {};
@@ -129,7 +157,7 @@ export default function CustomerDashboard() {
 
       setNearbyWorkers((onlineWorkers || []).map(w => ({
         ...w,
-        name: (w as any).profiles?.name || "Worker",
+        name: (w as any).profiles?.name || "Fundi",
         avatar_url: (w as any).profiles?.avatar_url || null,
         skill: (w.skills || []).map((s: string) => skillMap[s] || "").filter(Boolean).join(", ") || "General",
         rating: ratingMap[w.user_id] ? Math.round(ratingMap[w.user_id].sum / ratingMap[w.user_id].count * 10) / 10 : 0,
@@ -161,9 +189,19 @@ export default function CustomerDashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Find Skilled Workers</h1>
-        <p className="text-muted-foreground text-sm">Book trusted professionals near you</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Find Skilled Fundis</h1>
+          <p className="text-muted-foreground text-sm">Book trusted professionals near you</p>
+        </div>
+        <button onClick={toggleOnline}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            isOnline ? "bg-green-500/10 text-green-500" : "bg-muted text-muted-foreground"
+          }`}
+        >
+          {isOnline ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+          {isOnline ? "Online" : "Offline"}
+        </button>
       </div>
 
       <div className="relative max-w-2xl animate-fade-in">
@@ -215,7 +253,7 @@ export default function CustomerDashboard() {
       </div>
 
       <div className="animate-fade-in" style={{ animationDelay: "300ms" }}>
-        <h2 className="text-lg font-semibold text-foreground mb-3">Available Workers</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-3">Available Fundis</h2>
         {nearbyWorkers.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {nearbyWorkers.map((worker) => (
@@ -248,7 +286,7 @@ export default function CustomerDashboard() {
         ) : (
           <div className="stat-card flex flex-col items-center justify-center py-12 text-center">
             <MapPin className="w-10 h-10 text-muted-foreground mb-3" />
-            <p className="text-sm text-muted-foreground">No workers available right now. Check back soon!</p>
+            <p className="text-sm text-muted-foreground">No fundis available right now. Check back soon!</p>
           </div>
         )}
       </div>
@@ -278,7 +316,7 @@ export default function CustomerDashboard() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader><DialogTitle>Hire {hireDialog?.name}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">Fill in the job details. The worker will be notified and can accept or reject.</p>
+            <p className="text-sm text-muted-foreground">Fill in the job details. The fundi will be notified and can accept or reject.</p>
             <div className="space-y-2"><Label>Job Title *</Label><Input value={hireTitle} onChange={(e) => setHireTitle(e.target.value)} className="bg-muted/50" /></div>
             <div className="space-y-2"><Label>Description</Label><Textarea value={hireDescription} onChange={(e) => setHireDescription(e.target.value)} placeholder="Describe the work needed..." className="bg-muted/50" /></div>
             <div className="grid grid-cols-2 gap-4">
