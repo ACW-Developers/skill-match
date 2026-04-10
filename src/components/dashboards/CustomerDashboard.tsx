@@ -92,9 +92,36 @@ export default function CustomerDashboard() {
     navigate("/dashboard/bookings");
   };
 
+  const toggleOnline = async () => {
+    if (!user) return;
+    const newStatus = !isOnline;
+    setIsOnline(newStatus);
+
+    if (newStatus && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          await supabase.from("profiles").update({
+            is_online: true,
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+          } as any).eq("id", user.id);
+        },
+        async () => {
+          await supabase.from("profiles").update({ is_online: true } as any).eq("id", user.id);
+        }
+      );
+    } else {
+      await supabase.from("profiles").update({ is_online: false, latitude: null, longitude: null } as any).eq("id", user.id);
+    }
+  };
+
   useEffect(() => {
     if (!user) return;
     async function load() {
+      // Get current customer online status
+      const { data: myProfile } = await supabase.from("profiles").select("is_online").eq("id", user!.id).single();
+      setIsOnline((myProfile as any)?.is_online || false);
+
       const { data: cats } = await supabase.from("service_categories").select("*");
       const { data: workers } = await supabase.from("worker_profiles").select("skills");
       const skillCounts: Record<string, number> = {};
@@ -130,7 +157,7 @@ export default function CustomerDashboard() {
 
       setNearbyWorkers((onlineWorkers || []).map(w => ({
         ...w,
-        name: (w as any).profiles?.name || "Worker",
+        name: (w as any).profiles?.name || "Fundi",
         avatar_url: (w as any).profiles?.avatar_url || null,
         skill: (w.skills || []).map((s: string) => skillMap[s] || "").filter(Boolean).join(", ") || "General",
         rating: ratingMap[w.user_id] ? Math.round(ratingMap[w.user_id].sum / ratingMap[w.user_id].count * 10) / 10 : 0,
@@ -162,9 +189,19 @@ export default function CustomerDashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Find Skilled Fundis</h1>
-        <p className="text-muted-foreground text-sm">Book trusted professionals near you</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Find Skilled Fundis</h1>
+          <p className="text-muted-foreground text-sm">Book trusted professionals near you</p>
+        </div>
+        <button onClick={toggleOnline}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            isOnline ? "bg-green-500/10 text-green-500" : "bg-muted text-muted-foreground"
+          }`}
+        >
+          {isOnline ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+          {isOnline ? "Online" : "Offline"}
+        </button>
       </div>
 
       <div className="relative max-w-2xl animate-fade-in">
