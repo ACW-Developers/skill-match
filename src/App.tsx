@@ -49,21 +49,7 @@ const App = () => (
               <Route path="jobs" element={<AdminJobsPage />} />
               <Route path="categories" element={<AdminCategoriesPage />} />
               <Route path="disbursements" element={<AdminDisbursementsPage />} />
-              <Route path="complaints" element={<AdminComplaintsPage />} />
               <Route path="reports" element={<ReportsPage />} />
-              <Route path="activity" element={<ActivityLogsPage />} />
-              <Route path="user-management" element={<UserManagementPage />} />
-              {/* Worker */}
-              <Route path="my-jobs" element={<WorkerMyJobsPage />} />
-              <Route path="profile" element={<WorkerProfilePage />} />
-              <Route path="earnings" element={<WorkerEarningsPage />} />
-              <Route path="reviews" element={<WorkerReviewsPage />} />
-              {/* Customer */}
-              <Route path="post-job" element={<CustomerPostJobPage />} />
-              <Route path="find-workers" element={<FindWorkersPage />} />
-              <Route path="bookings" element={<CustomerBookingsPage />} />
-              <Route path="complaints" element={<CustomerComplaintsPage />} />
-              {/* Admin Complaints */}
               {/* Shared */}
               <Route path="payments" element={<PaymentsPage />} />
               <Route path="settings" element={<SettingsPage />} />
