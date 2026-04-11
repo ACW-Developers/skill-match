@@ -5,7 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Auth from "@/pages/Auth";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import Dashboard from "@/pages/Dashboard";
@@ -25,9 +25,17 @@ import PaymentsPage from "@/pages/PaymentsPage";
 import AdminJobsPage from "@/pages/AdminJobsPage";
 import AdminCategoriesPage from "@/pages/AdminCategoriesPage";
 import AdminDisbursementsPage from "@/pages/AdminDisbursementsPage";
+import CustomerComplaintsPage from "@/pages/CustomerComplaintsPage";
+import AdminComplaintsPage from "@/pages/AdminComplaintsPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
+
+function ComplaintsRouter() {
+  const { user } = useAuth();
+  if (user?.role === "admin") return <AdminComplaintsPage />;
+  return <CustomerComplaintsPage />;
+}
 
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
@@ -60,6 +68,7 @@ const App = () => (
               <Route path="find-workers" element={<FindWorkersPage />} />
               <Route path="bookings" element={<CustomerBookingsPage />} />
               {/* Shared */}
+              <Route path="complaints" element={<ComplaintsRouter />} />
               <Route path="payments" element={<PaymentsPage />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>
