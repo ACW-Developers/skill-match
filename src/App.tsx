@@ -61,6 +61,8 @@ const App = () => (
               <Route path="post-job" element={<CustomerPostJobPage />} />
               <Route path="find-workers" element={<FindWorkersPage />} />
               <Route path="bookings" element={<CustomerBookingsPage />} />
+              <Route path="complaints" element={<CustomerComplaintsPage />} />
+              {/* Admin Complaints */}
               {/* Shared */}
               <Route path="payments" element={<PaymentsPage />} />
               <Route path="settings" element={<SettingsPage />} />
