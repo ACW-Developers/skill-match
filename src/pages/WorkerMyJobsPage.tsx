@@ -283,34 +283,45 @@ export default function WorkerMyJobsPage() {
           {assignedJobs.length > 0 ? assignedJobs.map((job, i) => (
             <div key={job.id} className="stat-card animate-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
               <div className="space-y-2">
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                  <div>
-                    <p className="font-medium text-foreground">{job.title}</p>
-                    <p className="text-xs text-muted-foreground">KSH {job.budget ? job.budget.toLocaleString() : "No budget"} - {new Date(job.created_at).toLocaleString()}</p>
+                <div className="flex gap-4">
+                  {job.image_url ? (
+                    <img src={job.image_url} alt="Job" className="w-24 h-24 rounded-lg object-cover shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setImagePreview(job.image_url)} />
+                  ) : (
+                    <div className="w-24 h-24 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
+                      <ImageIcon className="w-7 h-7 text-muted-foreground/40" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-start justify-between gap-2 flex-wrap">
+                      <div>
+                        <p className="font-medium text-foreground">{job.title}</p>
+                        <p className="text-xs text-muted-foreground">KSH {job.budget ? job.budget.toLocaleString() : "No budget"} - {new Date(job.created_at).toLocaleString()}</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
+                          job.status === "completed" ? "bg-green-500/10 text-green-500" :
+                          job.status === "in_progress" ? "bg-primary/10 text-primary" : "bg-chart-4/10 text-chart-4"
+                        }`}>{job.status.replace("_", " ")}</span>
+                        {job.status === "accepted" && <Button size="sm" variant="outline" onClick={() => updateJobStatus(job.id, "in_progress")}>Start</Button>}
+                        {job.status === "in_progress" && <Button size="sm" onClick={() => updateJobStatus(job.id, "completed")}>Complete</Button>}
+                        {job.status === "completed" && job.paymentStatus && (
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
+                            job.paymentStatus === "completed" ? "bg-green-500/10 text-green-500" :
+                            job.paymentStatus === "pending" ? "bg-chart-4/10 text-chart-4" : ""
+                          }`}>💰 {job.paymentStatus}</span>
+                        )}
+                        {job.status === "completed" && !job.paymentStatus && (
+                          <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-destructive/10 text-destructive">Awaiting Payment</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/50 space-y-1">
+                      <p className="text-xs font-medium text-foreground">Customer: {job.customerName}</p>
+                      {job.customerEmail && <p className="text-xs text-muted-foreground flex items-center gap-1"><Mail className="w-3 h-3" /> {job.customerEmail}</p>}
+                      {job.customerPhone && <p className="text-xs text-muted-foreground flex items-center gap-1"><Phone className="w-3 h-3" /> {job.customerPhone}</p>}
+                      {job.address && <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.address}</p>}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
-                      job.status === "completed" ? "bg-green-500/10 text-green-500" :
-                      job.status === "in_progress" ? "bg-primary/10 text-primary" : "bg-chart-4/10 text-chart-4"
-                    }`}>{job.status.replace("_", " ")}</span>
-                    {job.status === "accepted" && <Button size="sm" variant="outline" onClick={() => updateJobStatus(job.id, "in_progress")}>Start</Button>}
-                    {job.status === "in_progress" && <Button size="sm" onClick={() => updateJobStatus(job.id, "completed")}>Complete</Button>}
-                    {job.status === "completed" && job.paymentStatus && (
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
-                        job.paymentStatus === "completed" ? "bg-green-500/10 text-green-500" :
-                        job.paymentStatus === "pending" ? "bg-chart-4/10 text-chart-4" : ""
-                      }`}>💰 {job.paymentStatus}</span>
-                    )}
-                    {job.status === "completed" && !job.paymentStatus && (
-                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-destructive/10 text-destructive">Awaiting Payment</span>
-                    )}
-                  </div>
-                </div>
-                <div className="p-3 rounded-lg bg-muted/50 space-y-1">
-                  <p className="text-xs font-medium text-foreground">Customer: {job.customerName}</p>
-                  {job.customerEmail && <p className="text-xs text-muted-foreground flex items-center gap-1"><Mail className="w-3 h-3" /> {job.customerEmail}</p>}
-                  {job.customerPhone && <p className="text-xs text-muted-foreground flex items-center gap-1"><Phone className="w-3 h-3" /> {job.customerPhone}</p>}
-                  {job.address && <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.address}</p>}
                 </div>
               </div>
             </div>
