@@ -22,6 +22,7 @@ export default function WorkerMyJobsPage() {
   const [proposedRate, setProposedRate] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [workerProfile, setWorkerProfile] = useState<any>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   async function loadData() {
     if (!user) return;
