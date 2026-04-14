@@ -77,7 +77,7 @@ export default function CustomerComplaintsPage() {
             <SelectContent>
               {jobs.map(j => (
                 <SelectItem key={j.id} value={j.id}>
-                  {j.title} — {(j as any).profiles?.name || "Fundi"}
+                  {j.title} - {(j as any).profiles?.name || "Fundi"}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -102,7 +102,7 @@ export default function CustomerComplaintsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-foreground">{(c as any).jobs?.title || "Job"}</p>
-                  <p className="text-xs text-muted-foreground">Fundi: {(c as any).profiles?.name || "—"} · {new Date(c.created_at).toLocaleDateString()}</p>
+                  <p className="text-xs text-muted-foreground">Fundi: {(c as any).profiles?.name || "-"} · {new Date(c.created_at).toLocaleDateString()}</p>
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${c.status === "open" ? "bg-chart-4/10 text-chart-4" : c.status === "resolved" ? "bg-green-500/10 text-green-500" : "bg-muted text-muted-foreground"}`}>
                   {c.status}

@@ -276,7 +276,7 @@ export default function AdminDisbursementsPage() {
                             </Button>
                           )}
                           {w.status === "rejected" && (
-                            <span className="text-muted-foreground text-xs">—</span>
+                            <span className="text-muted-foreground text-xs">-</span>
                           )}
                         </div>
                       </td>

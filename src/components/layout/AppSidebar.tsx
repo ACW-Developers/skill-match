@@ -6,13 +6,17 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard, Users, CalendarDays, ClipboardList, MapPin, Star, Briefcase, Search,
   BarChart3, Activity, Settings, ChevronLeft, Shield, CreditCard, UserCog, ArrowDownCircle,
-  Sparkles,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import logo from "@/assets/logo.png";
+
+// Tiny component to use logo as a nav icon (matches lucide icon API shape)
+const CommunityIcon = ({ className }: { className?: string }) => (
+  <img src={logo} alt="" className={`rounded ${className || "w-4 h-4"}`} />
+);
 
 const adminNav = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, key: "dashboard" },
@@ -21,7 +25,7 @@ const adminNav = [
   { title: "Categories", url: "/dashboard/categories", icon: ClipboardList, key: "categories" },
   { title: "Payments", url: "/dashboard/payments", icon: CreditCard, key: "payments" },
   { title: "Disbursements", url: "/dashboard/disbursements", icon: ArrowDownCircle, key: "disbursements" },
-  { title: "Community", url: "/dashboard/community", icon: Sparkles, key: "community" },
+  { title: "Community", url: "/dashboard/community", icon: CommunityIcon, key: "community" },
   { title: "Reports", url: "/dashboard/reports", icon: BarChart3, key: "reports" },
   { title: "Activity Logs", url: "/dashboard/activity", icon: Activity, key: "activity" },
   { title: "User Management", url: "/dashboard/user-management", icon: UserCog, key: "user-management" },
@@ -35,7 +39,7 @@ const workerNav = [
   { title: "Earnings", url: "/dashboard/earnings", icon: CreditCard, key: "earnings" },
   { title: "Reviews", url: "/dashboard/reviews", icon: Star, key: "reviews" },
   { title: "Payments", url: "/dashboard/payments", icon: CreditCard, key: "payments" },
-  { title: "Community", url: "/dashboard/community", icon: Sparkles, key: "community" },
+  { title: "Community", url: "/dashboard/community", icon: CommunityIcon, key: "community" },
   { title: "Settings", url: "/dashboard/settings", icon: Settings, key: "settings" },
 ];
 
@@ -45,7 +49,7 @@ const customerNav = [
   { title: "Find Fundis", url: "/dashboard/find-workers", icon: Search, key: "find-workers" },
   { title: "My Bookings", url: "/dashboard/bookings", icon: CalendarDays, key: "bookings" },
   { title: "Payments", url: "/dashboard/payments", icon: CreditCard, key: "payments" },
-  { title: "Community", url: "/dashboard/community", icon: Sparkles, key: "community" },
+  { title: "Community", url: "/dashboard/community", icon: CommunityIcon, key: "community" },
   { title: "Settings", url: "/dashboard/settings", icon: Settings, key: "settings" },
 ];
 

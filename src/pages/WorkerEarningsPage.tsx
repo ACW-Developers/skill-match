@@ -262,8 +262,8 @@ export default function WorkerEarningsPage() {
                       </span>
                     </td>
                     <td className="p-4 text-muted-foreground text-xs">{new Date(w.requested_at).toLocaleString()}</td>
-                    <td className="p-4 text-muted-foreground text-xs">{w.processed_at ? new Date(w.processed_at).toLocaleString() : "—"}</td>
-                     <td className="p-4 text-muted-foreground text-xs">{w.admin_notes || "—"}</td>
+                    <td className="p-4 text-muted-foreground text-xs">{w.processed_at ? new Date(w.processed_at).toLocaleString() : "-"}</td>
+                     <td className="p-4 text-muted-foreground text-xs">{w.admin_notes || "-"}</td>
                      <td className="p-4">
                        {w.status === "completed" && (
                          <Button size="sm" variant="ghost" className="gap-1.5 text-xs" onClick={() => setReceiptData({
