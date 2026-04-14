@@ -172,6 +172,47 @@ export type Database = {
           },
         ]
       }
+      community_blogs: {
+        Row: {
+          author_id: string
+          blog_type: string
+          content: string | null
+          created_at: string
+          id: string
+          image_url: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          blog_type?: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          blog_type?: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_blogs_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_comments: {
         Row: {
           author_id: string

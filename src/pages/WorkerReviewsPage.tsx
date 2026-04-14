@@ -48,7 +48,7 @@ export default function WorkerReviewsPage() {
 
       <div className="stat-card animate-fade-in">
         <div className="flex items-center gap-4">
-          <p className="text-4xl font-bold text-foreground tabular-nums">{avg > 0 ? avg : "—"}</p>
+          <p className="text-4xl font-bold text-foreground tabular-nums">{avg > 0 ? avg : "-"}</p>
           <div>
             <div className="flex gap-0.5 mb-1">
               {[1, 2, 3, 4, 5].map((s) => (
@@ -75,7 +75,7 @@ export default function WorkerReviewsPage() {
                     <span className="text-sm font-medium text-foreground">{r.reviewerName}</span>
                   </div>
                   {r.comment && <p className="text-sm text-muted-foreground">{r.comment}</p>}
-                  <p className="text-xs text-muted-foreground mt-1">Job: {(r as any).jobs?.title || "—"}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Job: {(r as any).jobs?.title || "-"}</p>
                 </div>
                 <span className="text-xs text-muted-foreground whitespace-nowrap">{new Date(r.created_at).toLocaleDateString()}</span>
               </div>

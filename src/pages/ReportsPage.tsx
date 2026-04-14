@@ -265,12 +265,12 @@ export default function ReportsPage() {
                       <TableRow key={w.id}>
                         <TableCell className="font-medium">{w.name}</TableCell>
                         <TableCell className="text-xs">{w.email}</TableCell>
-                        <TableCell className="text-xs">{w.phone || "—"}</TableCell>
+                        <TableCell className="text-xs">{w.phone || "-"}</TableCell>
                         <TableCell><span className={`px-2 py-0.5 rounded-full text-xs capitalize ${w.wp?.verification_status === "approved" ? "bg-green-500/10 text-green-500" : "bg-chart-4/10 text-chart-4"}`}>{w.wp?.verification_status || "pending"}</span></TableCell>
                         <TableCell>{w.wp?.years_experience || 0} yrs</TableCell>
-                        <TableCell>{w.wp?.hourly_rate || "—"}</TableCell>
-                        <TableCell className="text-xs">{w.wp?.county || "—"}</TableCell>
-                        <TableCell className="text-xs capitalize">{w.wp?.gender || "—"}</TableCell>
+                        <TableCell>{w.wp?.hourly_rate || "-"}</TableCell>
+                        <TableCell className="text-xs">{w.wp?.county || "-"}</TableCell>
+                        <TableCell className="text-xs capitalize">{w.wp?.gender || "-"}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -303,7 +303,7 @@ export default function ReportsPage() {
                       <TableRow key={c.id}>
                         <TableCell className="font-medium">{c.name}</TableCell>
                         <TableCell className="text-xs">{c.email}</TableCell>
-                        <TableCell className="text-xs">{c.phone || "—"}</TableCell>
+                        <TableCell className="text-xs">{c.phone || "-"}</TableCell>
                         <TableCell>{c.jobCount}</TableCell>
                         <TableCell>KSH {c.totalSpent.toLocaleString()}</TableCell>
                         <TableCell className="text-xs">{new Date(c.created_at).toLocaleDateString()}</TableCell>
@@ -413,7 +413,7 @@ export default function ReportsPage() {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-foreground">All Jobs ({jobs.length})</h3>
                 <Button size="sm" variant="outline" onClick={() => exportCSV(jobs.map(j => ({
-                  Title: j.title, Category: (j as any).service_categories?.name || "—", Status: j.status, Budget: j.budget || "—",
+                  Title: j.title, Category: (j as any).service_categories?.name || "-", Status: j.status, Budget: j.budget || "-",
                   Type: j.is_instant ? "Instant" : "Marketplace", Address: j.address || "", Date: new Date(j.created_at).toLocaleDateString(),
                 })), "jobs_report.csv")} className="gap-1.5"><Download className="w-4 h-4" /> Export CSV</Button>
               </div>
@@ -429,9 +429,9 @@ export default function ReportsPage() {
                     {jobs.slice(0, 50).map(j => (
                       <TableRow key={j.id}>
                         <TableCell className="font-medium">{j.title}</TableCell>
-                        <TableCell className="text-xs">{(j as any).service_categories?.name || "—"}</TableCell>
+                        <TableCell className="text-xs">{(j as any).service_categories?.name || "-"}</TableCell>
                         <TableCell><span className={`px-2 py-0.5 rounded-full text-xs capitalize ${j.status === "completed" ? "bg-green-500/10 text-green-500" : j.status === "cancelled" ? "bg-destructive/10 text-destructive" : "bg-chart-4/10 text-chart-4"}`}>{j.status.replace("_", " ")}</span></TableCell>
-                        <TableCell>{j.budget ? `KSH ${Number(j.budget).toLocaleString()}` : "—"}</TableCell>
+                        <TableCell>{j.budget ? `KSH ${Number(j.budget).toLocaleString()}` : "-"}</TableCell>
                         <TableCell className="text-xs">{j.is_instant ? "Instant" : "Marketplace"}</TableCell>
                         <TableCell className="text-xs">{new Date(j.created_at).toLocaleDateString()}</TableCell>
                       </TableRow>
@@ -454,8 +454,8 @@ export default function ReportsPage() {
               </div>
               <div className="flex items-center justify-end">
                 <Button size="sm" variant="outline" onClick={() => exportCSV(withdrawals.map(w => ({
-                  Fundi: (w as any).profiles?.name || "—", Amount: w.amount, Status: w.status,
-                  Requested: new Date(w.requested_at).toLocaleDateString(), Processed: w.processed_at ? new Date(w.processed_at).toLocaleDateString() : "—",
+                  Fundi: (w as any).profiles?.name || "-", Amount: w.amount, Status: w.status,
+                  Requested: new Date(w.requested_at).toLocaleDateString(), Processed: w.processed_at ? new Date(w.processed_at).toLocaleDateString() : "-",
                   Notes: w.admin_notes || "",
                 })), "disbursements_report.csv")} className="gap-1.5"><Download className="w-4 h-4" /> Export CSV</Button>
               </div>
@@ -470,12 +470,12 @@ export default function ReportsPage() {
                   <TableBody>
                     {withdrawals.map(w => (
                       <TableRow key={w.id}>
-                        <TableCell className="font-medium">{(w as any).profiles?.name || "—"}</TableCell>
+                        <TableCell className="font-medium">{(w as any).profiles?.name || "-"}</TableCell>
                         <TableCell>KSH {Number(w.amount).toLocaleString()}</TableCell>
                         <TableCell><span className={`px-2 py-0.5 rounded-full text-xs capitalize ${w.status === "completed" ? "bg-green-500/10 text-green-500" : w.status === "pending" ? "bg-chart-4/10 text-chart-4" : "bg-destructive/10 text-destructive"}`}>{w.status}</span></TableCell>
                         <TableCell className="text-xs">{new Date(w.requested_at).toLocaleDateString()}</TableCell>
-                        <TableCell className="text-xs">{w.processed_at ? new Date(w.processed_at).toLocaleDateString() : "—"}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{w.admin_notes || "—"}</TableCell>
+                        <TableCell className="text-xs">{w.processed_at ? new Date(w.processed_at).toLocaleDateString() : "-"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{w.admin_notes || "-"}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
