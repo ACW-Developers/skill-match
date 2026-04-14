@@ -13,6 +13,11 @@ import {
 } from "@/components/ui/sidebar";
 import logo from "@/assets/logo.png";
 
+// Tiny component to use logo as a nav icon (matches lucide icon API shape)
+const CommunityIcon = ({ className }: { className?: string }) => (
+  <img src={logo} alt="" className={`rounded ${className || "w-4 h-4"}`} />
+);
+
 const adminNav = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, key: "dashboard" },
   { title: "Verification", url: "/dashboard/verification", icon: Shield, key: "verification" },
