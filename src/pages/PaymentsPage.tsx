@@ -169,7 +169,7 @@ export default function PaymentsPage() {
                             <RotateCcw className={`w-3.5 h-3.5 ${resetting === p.id ? "animate-spin" : ""}`} />
                             {resetting === p.id ? "Resetting..." : "Reset"}
                           </Button>
-                        ) : <span className="text-muted-foreground">—</span>}
+                        ) : <span className="text-muted-foreground">-</span>}
                       </td>
                     )}
                   </tr>

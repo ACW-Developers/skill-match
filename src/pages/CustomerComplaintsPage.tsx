@@ -77,7 +77,7 @@ export default function CustomerComplaintsPage() {
             <SelectContent>
               {jobs.map(j => (
                 <SelectItem key={j.id} value={j.id}>
-                  {j.title} — {(j as any).profiles?.name || "Fundi"}
+                  {j.title} - {(j as any).profiles?.name || "Fundi"}
                 </SelectItem>
               ))}
             </SelectContent>
