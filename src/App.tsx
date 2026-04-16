@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import Auth from "@/pages/Auth";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import Dashboard from "@/pages/Dashboard";
@@ -36,6 +37,7 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <LanguageProvider>
+          <NotificationProvider>
           <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -71,6 +73,7 @@ const App = () => (
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
+          </NotificationProvider>
         </LanguageProvider>
       </AuthProvider>
     </QueryClientProvider>
