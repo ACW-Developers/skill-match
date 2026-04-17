@@ -281,6 +281,31 @@ export default function SettingsPage() {
           </>
         )}
 
+        {/* Preferences */}
+        <div className="stat-card animate-fade-in" style={{ animationDelay: "450ms" }}>
+          <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+            {soundOn ? <Volume2 className="w-5 h-5 text-primary" /> : <VolumeX className="w-5 h-5 text-primary" />} Preferences
+          </h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div>
+                <p className="text-sm font-medium text-foreground">Notification & UI Sounds</p>
+                <p className="text-xs text-muted-foreground">Play sounds for new alerts, submissions and app launch</p>
+              </div>
+              <Switch checked={soundOn} onCheckedChange={handleSoundToggle} />
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div>
+                <p className="text-sm font-medium text-foreground">Refresh Site</p>
+                <p className="text-xs text-muted-foreground">Clear cached files and reload to get the latest updates</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing} className="gap-1.5">
+                <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} /> Refresh Now
+              </Button>
+            </div>
+          </div>
+        </div>
+
         {/* Security */}
         <div className="stat-card animate-fade-in" style={{ animationDelay: "500ms" }}>
           <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2"><Shield className="w-5 h-5 text-primary" /> Security</h3>
