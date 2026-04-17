@@ -3,9 +3,11 @@ import { Briefcase, CreditCard, Star, Clock, ToggleLeft, ToggleRight } from "luc
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function WorkerDashboard() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [isOnline, setIsOnline] = useState(false);
   const [stats, setStats] = useState({ earnings: 0, completed: 0, rating: 0, pending: 0 });
   const [recentJobs, setRecentJobs] = useState<any[]>([]);
@@ -107,18 +109,18 @@ export default function WorkerDashboard() {
   }
 
   const statCards = [
-    { label: "Total Earnings", value: `KSH ${stats.earnings.toLocaleString()}`, icon: CreditCard, color: "text-primary", bg: "bg-primary/10" },
-    { label: "Jobs Completed", value: String(stats.completed), icon: Briefcase, color: "text-chart-2", bg: "bg-chart-2/10" },
-    { label: "Average Rating", value: stats.rating > 0 ? String(stats.rating) : "N/A", icon: Star, color: "text-chart-4", bg: "bg-chart-4/10" },
-    { label: "Pending Jobs", value: String(stats.pending), icon: Clock, color: "text-chart-3", bg: "bg-chart-3/10" },
+    { label: t("Total Earnings"), value: `KSH ${stats.earnings.toLocaleString()}`, icon: CreditCard, color: "text-primary", bg: "bg-primary/10" },
+    { label: t("Jobs Completed"), value: String(stats.completed), icon: Briefcase, color: "text-chart-2", bg: "bg-chart-2/10" },
+    { label: t("Average Rating"), value: stats.rating > 0 ? String(stats.rating) : "N/A", icon: Star, color: "text-chart-4", bg: "bg-chart-4/10" },
+    { label: t("Pending Jobs"), value: String(stats.pending), icon: Clock, color: "text-chart-3", bg: "bg-chart-3/10" },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Fundi Dashboard</h1>
-          <p className="text-muted-foreground text-sm">Manage your jobs and availability</p>
+          <h1 className="text-2xl font-bold text-foreground">{t("Fundi Dashboard")}</h1>
+          <p className="text-muted-foreground text-sm">{t("Manage your jobs and availability")}</p>
         </div>
         <button onClick={toggleOnline}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -126,7 +128,7 @@ export default function WorkerDashboard() {
           }`}
         >
           {isOnline ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
-          {isOnline ? "Online" : "Offline"}
+          {isOnline ? t("Online") : t("Offline")}
         </button>
       </div>
 
@@ -148,7 +150,7 @@ export default function WorkerDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="stat-card animate-fade-in" style={{ animationDelay: "400ms" }}>
-          <h3 className="text-lg font-semibold text-foreground mb-4">Weekly Earnings</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-4">{t("Weekly Earnings")}</h3>
           <ResponsiveContainer width="100%" height={240}>
             <AreaChart data={earningsData}>
               <defs>
@@ -167,7 +169,7 @@ export default function WorkerDashboard() {
         </div>
 
         <div className="stat-card animate-fade-in" style={{ animationDelay: "500ms" }}>
-          <h3 className="text-lg font-semibold text-foreground mb-4">Recent Jobs</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-4">{t("Recent Jobs")}</h3>
           {recentJobs.length > 0 ? (
             <div className="space-y-3">
               {recentJobs.map((job) => (
@@ -175,7 +177,7 @@ export default function WorkerDashboard() {
                   <div>
                     <p className="text-sm font-medium text-foreground">{job.title}</p>
                     <p className="text-xs text-muted-foreground">
-                      {(job as any).profiles?.name || "Client"} - {new Date(job.created_at).toLocaleDateString()}
+                      {(job as any).profiles?.name || t("Client")} - {new Date(job.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="text-right">
@@ -190,7 +192,7 @@ export default function WorkerDashboard() {
               ))}
             </div>
           ) : (
-            <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">No jobs yet - set yourself online to start receiving requests</div>
+            <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">{t("No jobs yet - set yourself online to start receiving requests")}</div>
           )}
         </div>
       </div>
