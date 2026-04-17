@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/workers-hero.jpg";
 import logo from "@/assets/logo.png";
+import { playSubmitSound } from "@/lib/sound";
 
 const Auth = () => {
   const [isSignIn, setIsSignIn] = useState(true);
@@ -108,6 +109,7 @@ const Auth = () => {
     try {
       if (isSignIn) {
         await login(email, password);
+        playSubmitSound();
       } else {
         await signup(email, password, name, role);
         // Update phone on profile after signup
@@ -115,6 +117,7 @@ const Auth = () => {
         if (user) {
           await supabase.from("profiles").update({ phone: phoneNumber }).eq("id", user.id);
         }
+        playSubmitSound();
         toast({
           title: "Account created",
           description: "Please check your email for verification, or sign in if auto-confirmed.",
